@@ -1,27 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Privacy in AI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<title>Privacy in AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    html {
-      scroll-behavior: smooth;
-    }
-  </style>
+<style>
+  html { scroll-behavior: smooth; }
+
+  /* scrollbar progress */
+  #progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(to right, #22d3ee, #3b82f6);
+    width: 0%;
+    z-index: 100;
+  }
+
+  /* reveal animation */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.8s ease;
+  }
+
+  .reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
 </head>
 
-<body class="bg-slate-950 text-white font-sans">
+<body class="bg-slate-950 text-white font-sans overflow-x-hidden">
+
+<div id="progress"></div>
 
 <!-- NAVBAR -->
-<nav class="fixed top-0 w-full bg-slate-900/70 backdrop-blur z-50">
+<nav id="navbar" class="fixed top-0 w-full bg-slate-900/60 backdrop-blur z-50 transition">
   <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
-    <h1 class="font-bold text-lg">PrivacyAI</h1>
-    <div class="space-x-6 text-sm text-gray-300">
-      <a href="#about" class="hover:text-white">About</a>
-      <a href="#method" class="hover:text-white">Method</a>
-      <a href="#results" class="hover:text-white">Results</a>
+    <h1 class="font-bold">PrivacyAI</h1>
+    <div class="space-x-6 text-gray-300 text-sm">
+      <a href="#about">About</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
     </div>
   </div>
 </nav>
@@ -29,69 +52,50 @@
 <!-- HERO -->
 <section class="min-h-screen flex flex-col justify-center items-center text-center relative overflow-hidden">
 
-  <!-- glow -->
-  <div class="absolute w-[500px] h-[500px] bg-cyan-500 opacity-20 blur-3xl rounded-full"></div>
+  <!-- glowing blobs -->
+  <div class="absolute w-[500px] h-[500px] bg-cyan-500 opacity-20 blur-3xl rounded-full animate-pulse"></div>
+  <div class="absolute w-[400px] h-[400px] bg-blue-500 opacity-20 blur-3xl rounded-full translate-x-40"></div>
 
   <h1 class="text-6xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">
     Privacy in AI
   </h1>
 
-  <p class="text-gray-400 text-lg max-w-xl">
-    Designing machine learning systems that balance performance and data privacy.
-  </p>
+  <p id="typing" class="text-gray-400 text-lg max-w-xl"></p>
 
 </section>
 
 <!-- ABOUT -->
-<section id="about" class="py-24 px-6 max-w-5xl mx-auto">
+<section id="about" class="py-24 px-6 max-w-5xl mx-auto reveal">
   <h2 class="text-3xl font-semibold mb-6">Why it Matters</h2>
-
-  <p class="text-gray-400 leading-relaxed">
-    Machine learning models can unintentionally leak sensitive information.
-    This project explores how to maintain high predictive performance while
-    ensuring privacy-aware modeling.
+  <p class="text-gray-400">
+    Machine learning models can leak sensitive data. This project explores balancing performance and privacy.
   </p>
 </section>
 
 <!-- METHOD -->
 <section id="method" class="py-24 px-6">
 
-  <h2 class="text-3xl font-semibold text-center mb-12">Approach</h2>
+  <h2 class="text-3xl font-semibold text-center mb-12 reveal">Approach</h2>
 
   <div class="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
 
-    <div class="bg-slate-800 p-6 rounded-xl hover:scale-105 transition">
-      <h3 class="font-semibold mb-2">Data</h3>
-      <p class="text-gray-400 text-sm">Preprocessing and cleaning</p>
-    </div>
-
-    <div class="bg-slate-800 p-6 rounded-xl hover:scale-105 transition">
-      <h3 class="font-semibold mb-2">Features</h3>
-      <p class="text-gray-400 text-sm">Engineered domain features</p>
-    </div>
-
-    <div class="bg-slate-800 p-6 rounded-xl hover:scale-105 transition">
-      <h3 class="font-semibold mb-2">Model</h3>
-      <p class="text-gray-400 text-sm">XGBoost / RF</p>
-    </div>
-
-    <div class="bg-slate-800 p-6 rounded-xl hover:scale-105 transition">
-      <h3 class="font-semibold mb-2">Evaluation</h3>
-      <p class="text-gray-400 text-sm">R² and validation</p>
-    </div>
+    <div class="reveal bg-white/5 backdrop-blur p-6 rounded-xl hover:scale-105 transition">Data</div>
+    <div class="reveal bg-white/5 backdrop-blur p-6 rounded-xl hover:scale-105 transition">Features</div>
+    <div class="reveal bg-white/5 backdrop-blur p-6 rounded-xl hover:scale-105 transition">Model</div>
+    <div class="reveal bg-white/5 backdrop-blur p-6 rounded-xl hover:scale-105 transition">Evaluation</div>
 
   </div>
 </section>
 
 <!-- RESULTS -->
-<section id="results" class="py-24 text-center">
+<section id="results" class="py-24 text-center reveal">
 
   <h2 class="text-3xl font-semibold mb-6">Results</h2>
 
   <p class="text-5xl font-bold text-cyan-400">R² = 0.883</p>
 
   <p class="text-gray-400 mt-4">
-    Strong performance with signs of overfitting.
+    Strong performance with slight overfitting
   </p>
 
 </section>
@@ -99,22 +103,59 @@
 <!-- INSIGHTS -->
 <section class="py-24 px-6">
 
-  <h2 class="text-3xl font-semibold text-center mb-12">Insights</h2>
+  <h2 class="text-3xl font-semibold text-center mb-12 reveal">Insights</h2>
 
   <div class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
 
-    <div class="bg-slate-800 p-6 rounded-xl">Feature engineering dominates</div>
-    <div class="bg-slate-800 p-6 rounded-xl">Overfitting is critical</div>
-    <div class="bg-slate-800 p-6 rounded-xl">AI tools need validation</div>
+    <div class="reveal bg-white/5 backdrop-blur p-6 rounded-xl">Feature engineering dominates</div>
+    <div class="reveal bg-white/5 backdrop-blur p-6 rounded-xl">Overfitting is critical</div>
+    <div class="reveal bg-white/5 backdrop-blur p-6 rounded-xl">AI needs validation</div>
 
   </div>
 
 </section>
 
-<!-- FOOTER -->
 <footer class="text-center py-10 text-gray-500 text-sm">
   Built with GitHub Pages
 </footer>
+
+<!-- JS MAGIC -->
+<script>
+
+  // typing effect
+  const text = "Designing intelligent systems with privacy-first principles.";
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      document.getElementById("typing").innerHTML += text.charAt(i);
+      i++;
+      setTimeout(type, 30);
+    }
+  }
+  type();
+
+  // reveal on scroll
+  function reveal() {
+    const reveals = document.querySelectorAll(".reveal");
+    reveals.forEach((el) => {
+      const windowHeight = window.innerHeight;
+      const elementTop = el.getBoundingClientRect().top;
+      if (elementTop < windowHeight - 100) {
+        el.classList.add("active");
+      }
+    });
+  }
+  window.addEventListener("scroll", reveal);
+
+  // progress bar
+  window.onscroll = () => {
+    let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    let scrolled = (winScroll / height) * 100;
+    document.getElementById("progress").style.width = scrolled + "%";
+  };
+
+</script>
 
 </body>
 </html>
