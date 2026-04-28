@@ -3,509 +3,706 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>RNM-Exponential · DP LLM Decoding</title>
+<title>RNM-Exponential · Differentially Private LLM Decoding</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+/* ─────────────────────────────────────────
+   TOKENS
+───────────────────────────────────────── */
 :root {
-  --bg: #0a0a0f;
+  --bg:      #0a0a0f;
   --surface: #111118;
-  --surface2: #13131d;
-  --border: #1e1e2e;
-  --border2: rgba(110,231,183,0.2);
-  --text: #e2e8f0;
-  --muted: #64748b;
-  --soft: #94a3b8;
-  --accent: #6ee7b7;
-  --accent2: #818cf8;
-  --accent3: #fb923c;
-  --red: #f87171;
-  --font-head: 'Syne', sans-serif;
-  --font-body: 'DM Mono', monospace;
+  --card:    #13131d;
+  --border:  #1e1e2e;
+  --b2:      rgba(110,231,183,.18);
+  --text:    #e2e8f0;
+  --soft:    #94a3b8;
+  --muted:   #64748b;
+  --green:   #6ee7b7;
+  --indigo:  #818cf8;
+  --orange:  #fb923c;
+  --red:     #f87171;
+  --fh: 'Syne', sans-serif;
+  --fm: 'DM Mono', monospace;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  font-family: var(--font-body);
-  background: var(--bg);
-  color: var(--text);
-  overflow: hidden;
-  height: 100vh;
-  width: 100vw;
+
+/* ─────────────────────────────────────────
+   RESET + BASE
+───────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:var(--fm);
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.6;
 }
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+
+/* ─────────────────────────────────────────
+   GRID BACKGROUND (PrivAI style)
+───────────────────────────────────────── */
+body::before{
+  content:'';
+  position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:
-    linear-gradient(rgba(110,231,183,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(110,231,183,0.025) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(rgba(110,231,183,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(110,231,183,.03) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+/* Radial glow top-left */
+body::after{
+  content:'';
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 10%,rgba(110,231,183,.06) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 85%,rgba(129,140,248,.05) 0%,transparent 65%);
 }
 
-/* ── NETWORK CANVAS (background 3D) ── */
-#network-canvas {
-  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+/* ─────────────────────────────────────────
+   TOPBAR
+───────────────────────────────────────── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;
+  background:rgba(10,10,15,.92);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.tb-brand{
+  font-family:var(--fh);font-size:13px;font-weight:700;
+  color:var(--green);letter-spacing:.04em;
+}
+.tb-meta{
+  display:flex;align-items:center;gap:24px;
+  font-size:11px;color:var(--muted);letter-spacing:.08em;
+}
+.tb-dot{
+  display:flex;align-items:center;gap:6px;
+  color:var(--green);
+}
+.tb-dot::before{
+  content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--green);
+  animation:pulse 2s ease-in-out infinite;
+  display:inline-block;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ─────────────────────────────────────────
+   SECTIONS — fixed, one at a time
+───────────────────────────────────────── */
+.sec{
+  position:fixed;
+  top:52px;left:0;right:0;bottom:56px;
+  overflow-y:auto;
+  z-index:1;
+  display:none;
+  /* NO animation here — transitions controlled via JS classes */
+}
+.sec.active{display:block;}
+
+/* Transition classes added/removed by JS */
+.sec.fade-in{
+  animation:fadeIn .35s cubic-bezier(.4,0,.2,1) forwards;
+}
+.sec.fade-out{
+  animation:fadeOut .25s cubic-bezier(.4,0,1,1) forwards;
+  pointer-events:none;
+}
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(10px)}
+  to  {opacity:1;transform:translateY(0)}
+}
+@keyframes fadeOut{
+  from{opacity:1;transform:translateY(0)}
+  to  {opacity:0;transform:translateY(-8px)}
 }
 
-/* ── SECTIONS ── */
-.sec {
-  position: fixed; inset: 0; z-index: 2;
-  overflow-y: auto; overflow-x: hidden;
-  display: none; opacity: 0;
-  padding-bottom: 80px;
+/* ─────────────────────────────────────────
+   BOTTOM NAV
+───────────────────────────────────────── */
+.nav-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  height:56px;
+  display:flex;align-items:center;justify-content:center;gap:0;
+  background:rgba(10,10,15,.95);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);
 }
-.sec.active { display: block; }
-.sec.entering { animation: secEnter 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.sec.leaving { animation: secLeave 0.4s cubic-bezier(0.4, 0, 1, 1) forwards; }
-@keyframes secEnter {
-  from { opacity: 0; transform: scale(0.97) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+.nav-inner{
+  display:flex;align-items:center;gap:6px;
 }
-@keyframes secLeave {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(1.02); }
+.nav-btn{
+  height:34px;
+  display:flex;align-items:center;gap:7px;
+  padding:0 14px;
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--muted);
+  font-family:var(--fm);font-size:11px;letter-spacing:.08em;
+  cursor:pointer;
+  transition:all .18s;
+  border-radius:3px;
 }
-
-/* ── TOPBAR ── */
-.topbar {
-  padding: 16px 48px;
-  display: flex; justify-content: space-between; align-items: center;
-  border-bottom: 1px solid var(--border);
-  background: rgba(10,10,15,0.9);
-  backdrop-filter: blur(12px);
-  position: sticky; top: 0; z-index: 100;
+.nav-btn svg{width:13px;height:13px;flex-shrink:0}
+.nav-btn:hover:not(:disabled){
+  border-color:var(--green);color:var(--green);
+  background:rgba(110,231,183,.06);
 }
-.topbar-brand {
-  font-family: var(--font-head); font-size: 13px; font-weight: 700;
-  letter-spacing: 0.08em; color: var(--accent);
+.nav-btn:disabled{opacity:.25;cursor:not-allowed}
+.nav-btn.home:hover:not(:disabled){
+  border-color:var(--indigo);color:var(--indigo);
+  background:rgba(129,140,248,.06);
 }
-.topbar-meta {
-  font-size: 11px; color: var(--muted); letter-spacing: 0.08em;
-  display: flex; gap: 24px; align-items: center;
+.nav-progress{
+  font-size:11px;color:var(--muted);
+  min-width:36px;text-align:center;letter-spacing:.1em;
 }
-.live-dot { color: var(--accent); display: flex; align-items: center; gap: 6px; }
-.live-dot::before {
-  content: ''; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent); animation: blink 2s ease-in-out infinite;
-  display: inline-block;
+.nav-dots{display:flex;gap:5px;padding:0 8px;}
+.nav-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--border);cursor:pointer;
+  transition:all .18s;border:1px solid rgba(110,231,183,.1);
 }
-@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-
-/* ── NAV BAR ── */
-.nav-bar {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  z-index: 300; display: flex; align-items: center; gap: 10px;
-  background: rgba(17,17,24,0.96); backdrop-filter: blur(20px);
-  border: 1px solid var(--border); padding: 10px 20px; border-radius: 48px;
-}
-.nav-btn {
-  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border);
-  background: transparent; cursor: pointer; display: flex; align-items: center;
-  justify-content: center; transition: all 0.2s; color: var(--muted);
-}
-.nav-btn svg { width: 14px; height: 14px; }
-.nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: rgba(110,231,183,0.08); }
-.nav-btn:disabled { opacity: 0.25; cursor: not-allowed; }
-.nav-progress { font-size: 11px; color: var(--muted); min-width: 40px; text-align: center; letter-spacing: 0.1em; }
-.nav-section-name { font-size: 11px; color: var(--accent); letter-spacing: 0.06em; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
-.nav-dots { display: flex; gap: 5px; padding: 0 4px; }
-.nav-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--border); cursor: pointer; transition: all 0.2s;
-  border: 1px solid rgba(110,231,183,0.15);
-}
-.nav-dot.active { background: var(--accent); border-color: var(--accent); }
-
-/* ── WRAP ── */
-.wrap { max-width: 1100px; margin: 0 auto; padding: 0 48px; }
-
-/* ── SEC HEADER ── */
-.sec-header {
-  padding: 40px 0 28px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 36px;
-  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
-}
-.sec-num {
-  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--accent); border: 1px solid rgba(110,231,183,0.25);
-  background: rgba(110,231,183,0.04); padding: 3px 10px;
-}
-.sec-header h2 {
-  font-family: var(--font-head); font-size: clamp(26px,3vw,38px);
-  font-weight: 800; letter-spacing: -0.02em; color: #fff;
-}
-.sec-header h2 em { font-style: italic; color: var(--accent); font-weight: 600; }
-.sec-aside { margin-left: auto; font-size: 10px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; }
-
-/* ── TAG / CHIP ── */
-.tag {
-  display: inline-block; font-size: 10px; letter-spacing: 0.12em;
-  text-transform: uppercase; padding: 3px 10px; border: 1px solid;
-  font-family: var(--font-body);
-}
-.tag-green { color: var(--accent); border-color: rgba(110,231,183,0.3); background: rgba(110,231,183,0.05); }
-.tag-indigo { color: var(--accent2); border-color: rgba(129,140,248,0.3); background: rgba(129,140,248,0.05); }
-.tag-orange { color: var(--accent3); border-color: rgba(251,146,60,0.3); background: rgba(251,146,60,0.05); }
-.tag-muted { color: var(--muted); border-color: var(--border); background: transparent; }
-
-/* ── CARDS ── */
-.card {
-  background: var(--surface2); border: 1px solid var(--border);
-  padding: 24px 22px; position: relative; overflow: hidden;
-  transition: border-color 0.25s, background 0.25s;
-}
-.card:hover { border-color: rgba(110,231,183,0.25); background: rgba(110,231,183,0.02); }
-.card-num {
-  position: absolute; top: 16px; right: 18px;
-  font-family: var(--font-head); font-size: 36px; font-weight: 800;
-  color: rgba(255,255,255,0.03); pointer-events: none;
-}
-.card h3 { font-family: var(--font-head); font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px; }
-.card p { font-size: 12px; color: var(--soft); line-height: 1.75; }
-.card-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-
-/* ── FORMULA ── */
-.formula {
-  background: rgba(110,231,183,0.04); border: 1px solid rgba(110,231,183,0.15);
-  padding: 10px 14px; font-size: 12px; color: var(--accent);
-  margin: 12px 0; letter-spacing: 0.05em;
+.nav-dot.active{background:var(--green);border-color:var(--green);}
+.nav-dot:hover{background:rgba(110,231,183,.4);}
+.nav-secname{
+  font-size:10px;color:var(--green);letter-spacing:.08em;
+  min-width:120px;text-align:center;
+  text-transform:uppercase;
 }
 
-/* ── HERO ── */
-.hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; padding: 40px 0 36px; }
-.hero-h1 { font-family: var(--font-head); font-size: clamp(42px,5.5vw,72px); font-weight: 800; letter-spacing: -0.03em; line-height: 0.95; margin-bottom: 20px; }
-.hero-h1 .soft { color: var(--soft); font-weight: 400; font-style: italic; }
-.hero-h1 .glow { color: var(--accent); }
-.hero-lede { font-size: 13px; color: var(--soft); line-height: 1.8; max-width: 440px; margin-bottom: 24px; }
-.hero-lede strong { color: var(--text); font-weight: 500; }
-.hero-meta-strip { display: grid; grid-template-columns: repeat(3,1fr); border: 1px solid var(--border); background: var(--surface); margin-top: 24px; }
-.hm-cell { padding: 14px 16px; border-right: 1px solid var(--border); }
-.hm-cell:last-child { border-right: none; }
-.hm-cell .label { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
-.hm-cell .val { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--text); }
-.code-frame { background: #080b12; border: 1px solid var(--border); overflow: hidden; }
-.code-bar { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: var(--surface); border-bottom: 1px solid var(--border); }
-.dot { width: 9px; height: 9px; border-radius: 50%; }
-.dot.r { background: #f87171; }
-.dot.y { background: var(--accent3); }
-.dot.g { background: var(--accent); }
-.code-bar span { margin-left: auto; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; }
-.code-body { padding: 18px; font-size: 12px; line-height: 2; }
-.cm { color: #2d4060; }
-.kw { color: #818cf8; }
-.fn { color: var(--accent); }
-.str { color: var(--accent3); }
+/* ─────────────────────────────────────────
+   WRAP + SECTION HEADER
+───────────────────────────────────────── */
+.wrap{max-width:1060px;margin:0 auto;padding:0 40px 40px;}
+.sec-header{
+  padding:32px 0 24px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:28px;
+  display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+}
+.sec-num{
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--green);border:1px solid rgba(110,231,183,.2);
+  background:rgba(110,231,183,.04);padding:3px 10px;white-space:nowrap;
+}
+.sec-header h2{
+  font-family:var(--fh);
+  font-size:clamp(22px,2.8vw,34px);
+  font-weight:800;letter-spacing:-.02em;color:#fff;
+}
+.sec-header h2 em{font-style:italic;color:var(--green);font-weight:600;}
+.sec-aside{
+  margin-left:auto;font-size:10px;color:var(--muted);
+  letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;
+}
 
-/* ── STATS ROW ── */
-.stats-row { display: grid; grid-template-columns: repeat(5,1fr); border: 1px solid var(--border); background: var(--surface); }
-.stat { padding: 20px 18px; border-right: 1px solid var(--border); transition: background 0.2s; }
-.stat:last-child { border-right: none; }
-.stat:hover { background: rgba(110,231,183,0.03); }
-.stat .snum { font-family: var(--font-head); font-size: clamp(28px,3vw,40px); font-weight: 800; letter-spacing: -0.03em; color: #fff; }
-.stat .snum .unit { font-size: 0.35em; color: var(--muted); font-weight: 400; }
-.stat .sdesc { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+/* ─────────────────────────────────────────
+   TYPOGRAPHY UTILITIES
+───────────────────────────────────────── */
+.label{
+  font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px;
+}
+.tag{
+  display:inline-block;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;padding:3px 10px;border:1px solid;
+  font-family:var(--fm);
+}
+.tag-g{color:var(--green);border-color:rgba(110,231,183,.3);background:rgba(110,231,183,.05);}
+.tag-i{color:var(--indigo);border-color:rgba(129,140,248,.3);background:rgba(129,140,248,.05);}
+.tag-o{color:var(--orange);border-color:rgba(251,146,60,.3);background:rgba(251,146,60,.05);}
+.tag-m{color:var(--muted);border-color:var(--border);background:transparent;}
 
-/* ── PROBLEM GRID ── */
-.prob-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); }
-.prob-card { background: var(--surface2); padding: 28px; position: relative; overflow: hidden; }
-.prob-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--c, var(--accent)); }
-.prob-card.c1 { --c: var(--red); }
-.prob-card.c2 { --c: var(--accent2); }
-.prob-card.c3 { --c: var(--accent); }
+.formula{
+  background:rgba(110,231,183,.04);
+  border:1px solid rgba(110,231,183,.15);
+  padding:10px 14px;font-size:12px;color:var(--green);
+  margin:12px 0;letter-spacing:.04em;font-family:var(--fm);
+}
 
-/* ── SOLUTION GRID ── */
-.sol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
-.sol-card { background: var(--surface2); padding: 28px; position: relative; }
-.sol-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 100%; background: var(--accent); }
+/* ─────────────────────────────────────────
+   GRID LAYOUTS
+───────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);}
 
-/* ── COIN FLIP VISUAL ── */
-.coin-wrapper { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; border: 1px solid var(--border); background: var(--surface2); overflow: hidden; }
-.coin-col { padding: 24px; }
-.coin-header { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-.coin-header.red { color: var(--red); }
-.coin-header.green { color: var(--accent); }
-.coin-vs { display: flex; align-items: center; justify-content: center; border-left: 1px solid var(--border); border-right: 1px solid var(--border); background: rgba(255,255,255,0.01); }
-.coin-vs span { font-family: var(--font-head); font-size: 20px; font-style: italic; color: var(--muted); }
+/* ─────────────────────────────────────────
+   CARD BASE
+───────────────────────────────────────── */
+.card{
+  background:var(--card);padding:22px;position:relative;
+  overflow:hidden;
+}
+.card h3{
+  font-family:var(--fh);font-size:16px;font-weight:700;
+  color:#fff;margin-bottom:8px;
+}
+.card p{font-size:12px;color:var(--soft);line-height:1.75;}
+.card-num{
+  position:absolute;top:14px;right:16px;
+  font-family:var(--fh);font-size:32px;font-weight:800;
+  color:rgba(255,255,255,.03);pointer-events:none;
+}
 
-/* TOKEN DISPLAY */
-.token-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
-.tok {
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  width: 54px; padding: 8px 4px;
-  border: 1px solid var(--border); background: var(--surface);
-  font-size: 9px; font-family: var(--font-body); transition: all 0.3s;
+/* top-accent cards */
+.card-accent-g::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--green);
 }
-.tok .tc {
-  width: 32px; height: 32px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 500; border: 2px solid;
+.card-accent-i::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--indigo);
 }
-.tok .ts { font-size: 8px; color: var(--muted); }
-.tok.hi .tc  { background: rgba(110,231,183,0.12); border-color: var(--accent); color: var(--accent); }
-.tok.mid .tc { background: rgba(251,146,60,0.1); border-color: var(--accent3); color: var(--accent3); }
-.tok.lo .tc  { background: rgba(248,113,113,0.1); border-color: var(--red); color: var(--red); }
-.tok.out { opacity: 0.15; }
-.tok.out .tc { background: rgba(100,116,139,0.1); border-color: var(--muted); color: var(--muted); }
+.card-accent-o::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--orange);
+}
+.card-accent-r::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--red);
+}
+/* left-accent cards */
+.card-left::before{
+  content:'';position:absolute;top:0;left:0;bottom:0;width:2px;
+  background:var(--green);
+}
 
-/* COIN FLIP ANIM */
-.coin-anim-row { display: flex; gap: 8px; align-items: center; margin: 14px 0; flex-wrap: wrap; }
-.coin-anim {
-  width: 36px; height: 36px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 500; cursor: pointer;
-  border: 2px solid; transition: all 0.4s; position: relative; overflow: hidden;
+/* ─────────────────────────────────────────
+   HERO
+───────────────────────────────────────── */
+.hero-grid{
+  display:grid;grid-template-columns:1.05fr .95fr;gap:36px;
+  align-items:center;padding:28px 0 24px;
 }
-.coin-anim .coin-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; }
-.coin-anim.flip { animation: coinFlip 0.5s ease-in-out; }
-@keyframes coinFlip {
-  0%   { transform: rotateX(0); }
-  50%  { transform: rotateX(90deg) scaleX(0.1); }
-  100% { transform: rotateX(0); }
+.hero-h1{
+  font-family:var(--fh);
+  font-size:clamp(38px,5vw,66px);
+  font-weight:800;letter-spacing:-.03em;line-height:.95;
+  margin-bottom:18px;
 }
-.verdict-row {
-  padding: 8px 12px; font-size: 11px;
-  display: flex; align-items: center; gap: 6px; margin-top: 10px;
+.h-soft{color:var(--soft);font-weight:400;font-style:italic;}
+.h-glow{color:var(--green);}
+.hero-lede{
+  font-size:12.5px;color:var(--soft);line-height:1.8;
+  max-width:420px;margin-bottom:20px;
 }
-.verdict-row::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.verdict-row.bad { background: rgba(248,113,113,0.06); border: 1px solid rgba(248,113,113,0.2); color: var(--red); }
-.verdict-row.bad::before { background: var(--red); }
-.verdict-row.good { background: rgba(110,231,183,0.06); border: 1px solid rgba(110,231,183,0.2); color: var(--accent); }
-.verdict-row.good::before { background: var(--accent); }
-.step-text { font-size: 12px; color: var(--soft); line-height: 1.7; margin-bottom: 10px; }
-.step-text strong { color: var(--text); font-weight: 500; }
+.hero-lede strong{color:var(--text);font-weight:500;}
+.hero-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;}
+.hero-meta{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  border:1px solid var(--border);background:var(--surface);
+}
+.hm{padding:12px 14px;border-right:1px solid var(--border);}
+.hm:last-child{border-right:none;}
+.hm .l{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.hm .v{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--text);}
 
-/* INTERACTIVE COINS */
-.coin-run-btn {
-  padding: 6px 14px; background: transparent; border: 1px solid var(--border);
-  color: var(--muted); cursor: pointer; font-family: var(--font-body); font-size: 10px;
-  letter-spacing: 0.1em; transition: all 0.2s; text-transform: uppercase;
+/* Code block */
+.code-frame{background:#080b12;border:1px solid var(--border);overflow:hidden;}
+.code-bar{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);
 }
-.coin-run-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(110,231,183,0.06); }
+.cdot{width:9px;height:9px;border-radius:50%;}
+.cdot.r{background:var(--red);}
+.cdot.y{background:var(--orange);}
+.cdot.g{background:var(--green);}
+.code-bar span{margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:.1em;}
+.code-body{padding:16px 18px;font-size:12px;line-height:1.9;}
+.cm{color:#2d4060;}.kw{color:var(--indigo);}.fn{color:var(--green);}.st{color:var(--orange);}
 
-/* REPLACEMENT BADGE */
-.replace-badge {
-  display: inline-block; padding: 3px 8px; font-size: 9px; letter-spacing: 0.1em;
-  text-transform: uppercase; margin-left: 6px; vertical-align: middle;
+/* Stats row */
+.stats-row{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  border:1px solid var(--border);background:var(--surface);
+  margin-top:1px;
 }
-.replace-badge.yes { background: rgba(248,113,113,0.1); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
-.replace-badge.no { background: rgba(110,231,183,0.08); color: var(--accent); border: 1px solid rgba(110,231,183,0.2); }
+.stat{
+  padding:18px 16px;border-right:1px solid var(--border);
+  transition:background .18s;
+}
+.stat:last-child{border-right:none;}
+.stat:hover{background:rgba(110,231,183,.03);}
+.stat .sn{
+  font-family:var(--fh);
+  font-size:clamp(26px,3vw,38px);
+  font-weight:800;letter-spacing:-.03em;color:#fff;line-height:1;
+}
+.stat .sn .u{font-size:.35em;color:var(--muted);font-weight:400;}
+.stat .sd{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:5px;}
 
-/* ── THEOREMS ── */
-.thm-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); }
-.thm { background: var(--surface2); padding: 24px; position: relative; overflow: hidden; }
-.thm::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--tc, var(--accent)); }
-.thm.t1 { --tc: var(--accent); }
-.thm.t2 { --tc: var(--accent2); }
-.thm.t3 { --tc: var(--accent3); }
-.thm h4 { font-family: var(--font-head); font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 10px; }
-.thm p { font-size: 12px; color: var(--soft); line-height: 1.7; margin-bottom: 8px; }
-.thm-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+/* ─────────────────────────────────────────
+   COIN FLIP INTUITION
+───────────────────────────────────────── */
+.coin-outer{border:1px solid var(--border);}
+.coin-top{
+  padding:14px 24px;background:rgba(110,231,183,.03);
+  border-bottom:1px solid var(--border);text-align:center;
+}
+.coin-top .ct{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--green);margin-bottom:4px;}
+.coin-top h3{font-family:var(--fh);font-size:18px;font-weight:700;color:#fff;}
+.coin-top h3 em{font-style:italic;color:var(--green);}
+.coin-cols{display:grid;grid-template-columns:1fr 48px 1fr;}
+.coin-col{padding:20px 22px;}
+.coin-vs{
+  display:flex;align-items:center;justify-content:center;
+  border-left:1px solid var(--border);border-right:1px solid var(--border);
+  background:rgba(255,255,255,.01);
+}
+.coin-vs span{font-family:var(--fh);font-size:18px;font-style:italic;color:var(--muted);}
+.coin-hd{font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.coin-hd.red{color:var(--red);}
+.coin-hd.grn{color:var(--green);}
+.badge-small{
+  display:inline-block;padding:2px 7px;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;margin-left:6px;vertical-align:middle;
+  border:1px solid;
+}
+.badge-yes{color:var(--red);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.07);}
+.badge-no{color:var(--green);border-color:rgba(110,231,183,.3);background:rgba(110,231,183,.07);}
 
-/* ── SIMULATION ── */
-.sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); margin-bottom: 1px; }
-.sim-full { background: var(--border); }
-.plot-frame { background: var(--surface2); padding: 18px; }
-.plot-frame canvas { display: block !important; max-height: 220px !important; }
-.plot-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
-.findings-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); margin-top: 1px; }
-.finding { background: var(--surface2); padding: 14px; border-left: 2px solid var(--fc, var(--accent)); }
-.finding.f1 { --fc: var(--accent); }
-.finding.f2 { --fc: #4ade80; }
-.finding.f3 { --fc: var(--accent2); }
-.finding.f4 { --fc: var(--accent3); }
-.finding .fl { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--fc, var(--accent)); margin-bottom: 8px; }
-.finding p { font-size: 11px; color: var(--soft); line-height: 1.6; }
+/* Token pills */
+.tok-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.tok{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  width:50px;padding:7px 3px;border:1px solid var(--border);background:var(--surface);
+  font-size:9px;font-family:var(--fm);
+}
+.tok .tc{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8.5px;font-weight:500;border:2px solid;
+}
+.tok .ts{font-size:8px;color:var(--muted);}
+.tok.hi .tc{background:rgba(110,231,183,.1);border-color:var(--green);color:var(--green);}
+.tok.mid .tc{background:rgba(251,146,60,.09);border-color:var(--orange);color:var(--orange);}
+.tok.lo .tc{background:rgba(248,113,113,.09);border-color:var(--red);color:var(--red);}
+.tok.out{opacity:.15;}
+.tok.out .tc{background:rgba(100,116,139,.1);border-color:var(--muted);color:var(--muted);}
 
-/* ── RESULTS ── */
-.dtabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-.dtab {
-  padding: 9px 20px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--muted); cursor: pointer; background: none; border: none;
-  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; font-family: var(--font-body);
-}
-.dtab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.dpanel { display: none; }
-.dpanel.active { display: block; }
-.res-grid { display: grid; grid-template-columns: 160px 1fr; gap: 16px; }
-.eps-stack { display: flex; flex-direction: column; gap: 6px; }
-.eps-btn {
-  padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border);
-  font-family: var(--font-body); font-size: 11px; text-align: left; cursor: pointer;
-  transition: all 0.2s; color: var(--muted);
-}
-.eps-btn.active { background: rgba(110,231,183,0.06); color: var(--accent); border-color: rgba(110,231,183,0.3); }
-.eps-btn .ev { font-size: 17px; font-family: var(--font-head); font-weight: 700; display: block; margin-bottom: 2px; }
-.eps-btn .el { font-size: 9px; letter-spacing: 0.1em; opacity: 0.7; }
-.metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
-.mc-frame { background: var(--surface2); padding: 14px; }
-.mc-frame canvas { max-height: 140px !important; display: block !important; }
-.mc-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.step-text{font-size:12px;color:var(--soft);line-height:1.75;margin-bottom:10px;}
+.step-text strong{color:var(--text);font-weight:500;}
 
-/* ── SAMPLE TEXT POPUP ── */
-.popup-overlay {
-  position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.8);
-  backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center;
-  padding: 24px;
+.verdict{
+  padding:8px 12px;font-size:11px;
+  display:flex;align-items:center;gap:6px;margin-top:10px;
 }
-.popup-overlay.open { display: flex; }
-.popup-box {
-  background: var(--surface); border: 1px solid rgba(110,231,183,0.2);
-  max-width: 820px; width: 100%; max-height: 85vh; overflow-y: auto;
-  animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-}
-@keyframes popIn { from { opacity:0; transform:scale(0.95) translateY(10px); } to { opacity:1; transform:scale(1) translateY(0); } }
-.popup-header {
-  padding: 20px 24px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 12px;
-  background: var(--surface2); position: sticky; top: 0; z-index: 10;
-}
-.popup-header h3 { font-family: var(--font-head); font-size: 17px; font-weight: 700; color: #fff; flex: 1; }
-.popup-close {
-  width: 30px; height: 30px; border: 1px solid var(--border); background: transparent;
-  color: var(--muted); cursor: pointer; font-size: 14px; display: flex;
-  align-items: center; justify-content: center; transition: all 0.2s;
-}
-.popup-close:hover { border-color: var(--red); color: var(--red); }
-.popup-body { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.popup-col { }
-.popup-col-title {
-  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 10px; padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-.popup-col-title.ref { color: var(--muted); }
-.popup-col-title.sm-col { color: var(--red); }
-.popup-col-title.rnm-col { color: var(--accent); }
-.popup-col-title.pub { color: var(--soft); }
-.text-block {
-  font-size: 12px; line-height: 1.85; color: var(--soft);
-  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
-  padding: 14px; min-height: 100px;
-}
-.popup-full { padding: 0 24px 20px; }
-.pub-comment { background: rgba(129,140,248,0.06); border: 1px solid rgba(129,140,248,0.2); padding: 12px 14px; font-size: 12px; color: var(--soft); line-height: 1.75; }
-.pub-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent2); margin-bottom: 6px; }
+.verdict::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.verdict.bad{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);color:var(--red);}
+.verdict.bad::before{background:var(--red);}
+.verdict.good{background:rgba(110,231,183,.06);border:1px solid rgba(110,231,183,.2);color:var(--green);}
+.verdict.good::before{background:var(--green);}
 
-/* ── ROAD AHEAD ── */
-.future-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1px; background: var(--border); }
-.fc { background: var(--surface2); padding: 24px; display: flex; flex-direction: column; gap: 10px; }
-.fc .fcn { font-family: var(--font-head); font-size: 32px; font-weight: 800; color: rgba(255,255,255,0.04); }
-.fc h3 { font-family: var(--font-head); font-size: 18px; font-weight: 700; color: #fff; }
-.fc p { font-size: 12px; color: var(--soft); line-height: 1.7; }
-.fc-status {
-  font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
-  padding: 3px 10px; width: fit-content;
+/* Sim run button */
+.run-btn{
+  padding:6px 14px;background:transparent;
+  border:1px solid var(--border);color:var(--muted);cursor:pointer;
+  font-family:var(--fm);font-size:10px;letter-spacing:.1em;
+  transition:all .18s;text-transform:uppercase;
 }
-.fc-status.done { background: rgba(110,231,183,0.08); color: var(--accent); border: 1px solid rgba(110,231,183,0.2); }
-.fc-status.inprog { background: rgba(129,140,248,0.08); color: var(--accent2); border: 1px solid rgba(129,140,248,0.2); }
-.fc-status.planned { background: rgba(251,146,60,0.08); color: var(--accent3); border: 1px solid rgba(251,146,60,0.2); }
+.run-btn:hover:not(:disabled){
+  border-color:var(--green);color:var(--green);background:rgba(110,231,183,.06);
+}
+.run-btn:disabled{opacity:.5;cursor:not-allowed;}
 
-/* ── RESPONSIVE ── */
-@media(max-width:900px){
-  .wrap{padding:0 20px;}
-  .topbar{padding:12px 20px;}
-  .hero-grid,.sol-grid,.coin-wrapper,.sim-grid,.future-grid{grid-template-columns:1fr;}
+/* Coin flip anim */
+.coin-anim{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:500;cursor:default;
+  border:2px solid;transition:all .35s;
+}
+.coin-anim.flip{animation:cf .45s ease-in-out;}
+@keyframes cf{
+  0%{transform:rotateY(0)}
+  50%{transform:rotateY(90deg) scaleX(.1)}
+  100%{transform:rotateY(0)}
+}
+.coin-row{display:flex;gap:7px;align-items:center;margin:12px 0;}
+.sim-result{font-size:11px;color:var(--muted);margin-top:6px;height:18px;}
+
+/* ─────────────────────────────────────────
+   THEOREM GRID
+───────────────────────────────────────── */
+.thm{background:var(--card);padding:22px;position:relative;overflow:hidden;}
+.thm h4{font-family:var(--fh);font-size:15px;font-weight:700;color:#fff;margin-bottom:9px;}
+.thm p{font-size:12px;color:var(--soft);line-height:1.72;margin-bottom:7px;}
+.thm-l{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+
+/* ─────────────────────────────────────────
+   SIM CHARTS
+───────────────────────────────────────── */
+.plot{background:var(--card);padding:16px;}
+.plot-t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.plot canvas{display:block !important;max-height:200px !important;}
+.plot-sm canvas{max-height:130px !important;}
+
+.finding{
+  background:var(--card);padding:14px;
+  border-left:2px solid var(--fl,var(--green));
+}
+.finding .fl{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--fl,var(--green));margin-bottom:6px;}
+.finding p{font-size:11px;color:var(--soft);line-height:1.6;}
+
+/* ─────────────────────────────────────────
+   RESULTS TABS
+───────────────────────────────────────── */
+.dtabs{
+  display:flex;gap:0;
+  border-bottom:1px solid var(--border);margin-bottom:22px;
+}
+.dtab{
+  padding:8px 18px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);cursor:pointer;background:none;border:none;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all .18s;font-family:var(--fm);
+}
+.dtab.active{color:var(--green);border-bottom-color:var(--green);}
+.dtab:hover:not(.active){color:var(--soft);}
+.dpanel{display:none;}
+.dpanel.active{display:block;}
+.res-grid{display:grid;grid-template-columns:148px 1fr;gap:14px;}
+.eps-stack{display:flex;flex-direction:column;gap:5px;}
+.eps-btn{
+  padding:9px 12px;background:var(--card);border:1px solid var(--border);
+  font-family:var(--fm);font-size:11px;text-align:left;cursor:pointer;
+  transition:all .18s;color:var(--muted);
+}
+.eps-btn.active{
+  background:rgba(110,231,183,.06);color:var(--green);
+  border-color:rgba(110,231,183,.28);
+}
+.eps-btn:hover:not(.active){color:var(--soft);}
+.eps-btn .ev{font-size:16px;font-family:var(--fh);font-weight:700;display:block;margin-bottom:1px;}
+.eps-btn .el{font-size:9px;letter-spacing:.1em;opacity:.7;}
+.mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+.mc-frame{background:var(--card);padding:13px;}
+.mc-frame canvas{max-height:130px !important;display:block !important;}
+.mc-t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+
+/* View samples button */
+.samples-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 16px;background:transparent;
+  border:1px solid rgba(129,140,248,.3);color:var(--indigo);
+  font-family:var(--fm);font-size:11px;letter-spacing:.1em;
+  cursor:pointer;transition:all .18s;text-transform:uppercase;
+}
+.samples-btn:hover{border-color:var(--indigo);background:rgba(129,140,248,.07);}
+.samples-btn svg{width:13px;height:13px;}
+
+/* ─────────────────────────────────────────
+   POPUP OVERLAY
+───────────────────────────────────────── */
+.pop-over{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.pop-over.open{display:flex;}
+.pop-box{
+  background:var(--surface);
+  border:1px solid rgba(129,140,248,.25);
+  max-width:860px;width:100%;max-height:88vh;
+  overflow-y:auto;position:relative;
+  animation:popIn .28s cubic-bezier(.16,1,.3,1);
+}
+@keyframes popIn{
+  from{opacity:0;transform:scale(.96) translateY(8px)}
+  to  {opacity:1;transform:scale(1) translateY(0)}
+}
+.pop-head{
+  padding:18px 22px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);position:sticky;top:0;z-index:10;
+}
+.pop-head h3{font-family:var(--fh);font-size:16px;font-weight:700;color:#fff;flex:1;}
+.pop-close{
+  width:28px;height:28px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;
+  font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:all .18s;
+}
+.pop-close:hover{border-color:var(--red);color:var(--red);}
+.pop-body{padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.pop-col-t{
+  font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px;padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.pop-col-t.ref{color:var(--muted);}
+.pop-col-t.sm{color:var(--red);}
+.pop-col-t.rnm{color:var(--green);}
+.pop-col-t.pub{color:var(--soft);}
+.txt-block{
+  font-size:12px;line-height:1.85;color:var(--soft);
+  background:rgba(255,255,255,.02);border:1px solid var(--border);
+  padding:12px;min-height:90px;
+}
+.pop-comment{
+  padding:14px 22px 18px;border-top:1px solid var(--border);
+}
+.pop-comment .cl{
+  font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--indigo);margin-bottom:6px;
+}
+.pop-comment .cb{
+  background:rgba(129,140,248,.06);border:1px solid rgba(129,140,248,.18);
+  padding:11px 13px;font-size:12px;color:var(--soft);line-height:1.75;
+}
+
+/* Inline nav selector for popup */
+.pop-nav{
+  display:flex;gap:6px;padding:12px 22px;border-bottom:1px solid var(--border);
+  background:var(--surface);flex-wrap:wrap;align-items:center;
+}
+.pop-nav-label{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-right:4px;}
+.pop-sel{
+  padding:4px 12px;border:1px solid var(--border);background:transparent;
+  color:var(--muted);font-family:var(--fm);font-size:11px;cursor:pointer;transition:all .18s;
+}
+.pop-sel.active{border-color:rgba(110,231,183,.3);color:var(--green);background:rgba(110,231,183,.06);}
+
+/* ─────────────────────────────────────────
+   ROAD AHEAD
+───────────────────────────────────────── */
+.fc{background:var(--card);padding:22px;display:flex;flex-direction:column;gap:10px;}
+.fc .fcn{font-family:var(--fh);font-size:28px;font-weight:800;color:rgba(255,255,255,.04);}
+.fc h3{font-family:var(--fh);font-size:16px;font-weight:700;color:#fff;}
+.fc p{font-size:12px;color:var(--soft);line-height:1.7;}
+.fc-s{
+  font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+  padding:3px 10px;width:fit-content;
+}
+.fc-s.done{background:rgba(110,231,183,.08);color:var(--green);border:1px solid rgba(110,231,183,.2);}
+.fc-s.prog{background:rgba(129,140,248,.08);color:var(--indigo);border:1px solid rgba(129,140,248,.2);}
+.fc-s.plan{background:rgba(251,146,60,.08);color:var(--orange);border:1px solid rgba(251,146,60,.2);}
+
+/* ─────────────────────────────────────────
+   NOTE BOX
+───────────────────────────────────────── */
+.note{
+  background:rgba(129,140,248,.05);
+  border:1px solid rgba(129,140,248,.18);
+  border-left:2px solid var(--indigo);
+  padding:11px 14px;font-size:12px;color:var(--soft);margin-top:14px;
+}
+.note strong{color:var(--text);font-weight:500;}
+
+/* ─────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────── */
+@media(max-width:860px){
+  .wrap{padding:0 18px 32px;}
+  .topbar{padding:0 18px;}
+  .hero-grid,.coin-cols,.g2,.res-grid{grid-template-columns:1fr;}
   .coin-vs{display:none;}
-  .thm-grid,.findings-grid,.prob-grid{grid-template-columns:1fr;}
-  .stats-row{grid-template-columns:repeat(2,1fr);}
-  .res-grid,.metrics-grid{grid-template-columns:1fr;}
-  .popup-body{grid-template-columns:1fr;}
-  .nav-section-name{display:none;}
+  .g3,.g4,.g5{grid-template-columns:1fr 1fr;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .mc-grid{grid-template-columns:1fr;}
+  .pop-body{grid-template-columns:1fr;}
+  .nav-secname{display:none;}
+  .nav-dots{display:none;}
 }
-
-/* Show sample button */
-.show-sample-btn {
-  padding: 7px 16px; background: transparent; border: 1px solid var(--border);
-  color: var(--accent2); cursor: pointer; font-family: var(--font-body); font-size: 11px;
-  letter-spacing: 0.1em; transition: all 0.2s; text-transform: uppercase; margin-top: 16px;
-}
-.show-sample-btn:hover { border-color: var(--accent2); background: rgba(129,140,248,0.08); }
-.note-box {
-  background: rgba(129,140,248,0.06); border: 1px solid rgba(129,140,248,0.2);
-  border-left: 2px solid var(--accent2); padding: 12px 16px;
-  font-size: 12px; color: var(--soft); margin-top: 16px;
-}
-.note-box strong { color: var(--text); font-weight: 500; }
 </style>
 </head>
 <body>
 
-<!-- Background 3D network canvas -->
-<canvas id="network-canvas"></canvas>
-
-<!-- Sample text popup -->
-<div class="popup-overlay" id="sample-popup" onclick="closeSamplePopup(event)">
-  <div class="popup-box" id="sample-box">
-    <div class="popup-header">
+<!-- ══ POPUP: Sample Text Comparison ══ -->
+<div class="pop-over" id="pop" onclick="popClose(event)">
+  <div class="pop-box">
+    <div class="pop-head">
       <h3>Generated Text Comparison</h3>
-      <span id="popup-eps-label" class="tag tag-green" style="font-size:9px;"></span>
-      <button class="popup-close" onclick="closeSamplePopupDirect()">✕</button>
+      <span id="pop-eps-tag" class="tag tag-g" style="font-size:9px;"></span>
+      <button class="pop-close" onclick="popCloseDirect()">✕</button>
     </div>
-    <div class="popup-body">
-      <div class="popup-col">
-        <div class="popup-col-title ref">Reference text</div>
-        <div class="text-block" id="popup-ref">Loading...</div>
+    <div class="pop-nav">
+      <span class="pop-nav-label">Dataset:</span>
+      <button class="pop-sel" id="pn-tab"    onclick="popSetDS('tab',this)">TAB</button>
+      <button class="pop-sel" id="pn-yelp"   onclick="popSetDS('yelp',this)">Yelp</button>
+      <button class="pop-sel" id="pn-pubmed" onclick="popSetDS('pubmed',this)">PubMed</button>
+      <span class="pop-nav-label" style="margin-left:10px;">ε level:</span>
+      <button class="pop-sel" id="pe-0" onclick="popSetEps(0,this)">ε₁ low</button>
+      <button class="pop-sel" id="pe-1" onclick="popSetEps(1,this)">ε₂ mid</button>
+      <button class="pop-sel" id="pe-2" onclick="popSetEps(2,this)">ε₃ high</button>
+    </div>
+    <div class="pop-body">
+      <div>
+        <div class="pop-col-t ref">Reference text</div>
+        <div class="txt-block" id="p-ref"></div>
       </div>
-      <div class="popup-col">
-        <div class="popup-col-title sm-col">Softmax (baseline)</div>
-        <div class="text-block" id="popup-sm">Loading...</div>
+      <div>
+        <div class="pop-col-t pub">Public prompt used</div>
+        <div class="txt-block" id="p-pub"></div>
       </div>
-      <div class="popup-col">
-        <div class="popup-col-title rnm-col">RNM-Exponential (ours)</div>
-        <div class="text-block" id="popup-rnm">Loading...</div>
+      <div>
+        <div class="pop-col-t sm">Softmax — baseline</div>
+        <div class="txt-block" id="p-sm"></div>
       </div>
-      <div class="popup-col">
-        <div class="popup-col-title pub">Public logits prompt used</div>
-        <div class="text-block" id="popup-pub">Loading...</div>
+      <div>
+        <div class="pop-col-t rnm">RNM-Exponential — ours</div>
+        <div class="txt-block" id="p-rnm"></div>
       </div>
     </div>
-    <div class="popup-full">
-      <div class="pub-label">Reviewer comment</div>
-      <div class="pub-comment" id="popup-comment">Loading...</div>
+    <div class="pop-comment">
+      <div class="cl">Reviewer note</div>
+      <div class="cb" id="p-note"></div>
     </div>
   </div>
 </div>
 
-<!-- ══════════ SECTIONS ══════════ -->
-<div class="sec active" id="sec-0">
-  <div class="topbar">
-    <div class="topbar-brand">DA5001 · IIT Madras · 2025</div>
-    <div class="topbar-meta">
-      <span class="live-dot">DP Decoding Active</span>
-      <span>DA24B016 · DA24B028 · DA24B050</span>
-    </div>
+<!-- ══ TOPBAR ══ -->
+<div class="topbar">
+  <div class="tb-brand">DA5001 · IIT Madras · 2025</div>
+  <div class="tb-meta">
+    <span class="tb-dot">DP Decoding Active</span>
+    <span>DA24B016 · DA24B028 · DA24B050</span>
   </div>
-  <div class="wrap">
-    <div class="hero-grid">
-      <div>
-        <h1 class="hero-h1">
-          Sharper<br>
-          <span class="soft">sampling,</span><br>
-          <span class="glow">safer text.</span>
-        </h1>
-        <p class="hero-lede">
-          Softmax assigns probability to <strong>every token</strong> in the vocabulary — even garbage ones. Under differential privacy, this gets worse. We replace it with <strong>Report-Noisy-Max using Exponential noise</strong>, and prove it's strictly better.
-        </p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
-          <span class="tag tag-green">RNM-Exponential</span>
-          <span class="tag tag-indigo">ε-DP Guaranteed</span>
-          <span class="tag tag-orange">InvisibleInk Extension</span>
-        </div>
-        <div class="hero-meta-strip">
-          <div class="hm-cell"><div class="label">Datasets</div><div class="val">TAB · Yelp · PubMed</div></div>
-          <div class="hm-cell"><div class="label">Privacy</div><div class="val">ε ∈ {ε₁, ε₂, ε₃}</div></div>
-          <div class="hm-cell"><div class="label">Samples</div><div class="val">100 / ε</div></div>
-        </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SECTIONS
+════════════════════════════════════════ -->
+
+<!-- §0 HOME -->
+<div class="sec active" id="sec-0">
+<div class="wrap">
+  <div class="hero-grid">
+    <div>
+      <h1 class="hero-h1">
+        Sharper<br>
+        <span class="h-soft">sampling,</span><br>
+        <span class="h-glow">safer text.</span>
+      </h1>
+      <p class="hero-lede">
+        Softmax assigns probability to <strong>every token</strong> in the vocabulary — even garbage ones. Under differential privacy, this degrades badly. We replace the final sampling step with <strong>Report-Noisy-Max using Exponential noise</strong>, and prove it is strictly better.
+      </p>
+      <div class="hero-chips">
+        <span class="tag tag-g">RNM-Exponential</span>
+        <span class="tag tag-i">ε-DP Guaranteed</span>
+        <span class="tag tag-o">InvisibleInk Extension</span>
       </div>
-      <div>
-        <div class="code-frame">
-          <div class="code-bar">
-            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-            <span>mechanism_swap.py</span>
-          </div>
-          <div class="code-body">
+      <div class="hero-meta">
+        <div class="hm"><div class="l">Datasets</div><div class="v">TAB · Yelp · PubMed</div></div>
+        <div class="hm"><div class="l">Privacy</div><div class="v">ε ∈ {ε₁, ε₂, ε₃}</div></div>
+        <div class="hm"><div class="l">Samples</div><div class="v">100 / ε level</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="code-frame">
+        <div class="code-bar">
+          <span class="cdot r"></span><span class="cdot y"></span><span class="cdot g"></span>
+          <span>mechanism_swap.py</span>
+        </div>
+        <div class="code-body">
 <span class="cm"># Standard DP decoding (InvisibleInk baseline)</span>
 <span class="kw">def</span> <span class="fn">sample_softmax</span>(logits, τ):
   <span class="cm"># Gumbel-Max → flat distribution</span>
@@ -517,904 +714,756 @@ body::before {
   noise = <span class="fn">Exponential</span>(scale=λ)
   <span class="kw">return</span> argmax(logits + noise)
 
-<span class="cm"># Same ε. Strictly better utility. (Theorem 3)</span>
-          </div>
+<span class="cm"># Same ε. Strictly better utility. (Thm. 3)</span>
         </div>
       </div>
     </div>
-    <div class="stats-row">
-      <div class="stat"><div class="snum">3<span class="unit">datasets</span></div><div class="sdesc">TAB · Yelp · PubMed</div></div>
-      <div class="stat"><div class="snum">3<span class="unit">ε vals</span></div><div class="sdesc">Varying privacy budget</div></div>
-      <div class="stat"><div class="snum">100<span class="unit">/ ε</span></div><div class="sdesc">Generated samples</div></div>
-      <div class="stat"><div class="snum">5<span class="unit">metrics</span></div><div class="sdesc">PPL · BERT · MAUVE · Rep · TTR</div></div>
-      <div class="stat"><div class="snum" style="color:var(--accent)">2<span class="unit">×</span></div><div class="sdesc">Error reduction (p→0)</div></div>
-    </div>
   </div>
+  <div class="stats-row">
+    <div class="stat"><div class="sn">3<span class="u">datasets</span></div><div class="sd">TAB · Yelp · PubMed</div></div>
+    <div class="stat"><div class="sn">3<span class="u">ε vals</span></div><div class="sd">Varying privacy budget</div></div>
+    <div class="stat"><div class="sn">100<span class="u">/ ε</span></div><div class="sd">Generated samples</div></div>
+    <div class="stat"><div class="sn">5<span class="u">metrics</span></div><div class="sd">PPL · BERT · MAUVE · Rep · TTR</div></div>
+    <div class="stat"><div class="sn" style="color:var(--green)">2<span class="u">×</span></div><div class="sd">Error reduction (p→0)</div></div>
+  </div>
+</div>
 </div>
 
 <!-- §1 PROBLEM -->
 <div class="sec" id="sec-1">
-  <div class="topbar"><div class="topbar-brand">DA5001 · IIT Madras · 2025</div><div class="topbar-meta"><span>§ 01 — The Problem</span></div></div>
-  <div class="wrap">
-    <div class="sec-header">
-      <span class="sec-num">§ 01</span>
-      <h2>Why <em>Softmax fails</em> under privacy</h2>
-      <span class="sec-aside">The motivation</span>
+<div class="wrap">
+  <div class="sec-header">
+    <span class="sec-num">§ 01</span>
+    <h2>Why <em>Softmax fails</em> under privacy</h2>
+    <span class="sec-aside">The motivation</span>
+  </div>
+  <div class="g3">
+    <div class="card card-accent-r">
+      <div class="label">Problem 01 · Training</div>
+      <h3>LLMs memorize</h3>
+      <p>Large language models trained on sensitive corpora can reproduce verbatim text — exposing private information through membership inference and data extraction attacks at inference time.</p>
     </div>
-    <div class="prob-grid">
-      <div class="prob-card c1">
-        <div class="card-label">Problem 01 · Training</div>
-        <h3 style="font-family:var(--font-head);font-size:17px;font-weight:700;color:#fff;margin-bottom:10px;">LLMs memorize</h3>
-        <p style="font-size:12px;color:var(--soft);line-height:1.75;">Large language models trained on sensitive corpora can reproduce verbatim text from training data — exposing private information through membership inference and extraction attacks at inference time.</p>
-      </div>
-      <div class="prob-card c2">
-        <div class="card-label">Problem 02 · Defence</div>
-        <h3 style="font-family:var(--font-head);font-size:17px;font-weight:700;color:#fff;margin-bottom:10px;">DP-SGD is too costly</h3>
-        <p style="font-size:12px;color:var(--soft);line-height:1.75;">Per-sample gradient clipping scales poorly to billion-parameter models. Inference-time DP decoding — injecting noise into the token selection step — is far more practical, but has its own pitfalls.</p>
-      </div>
-      <div class="prob-card c3">
-        <div class="card-label">Problem 03 · Mechanism</div>
-        <h3 style="font-family:var(--font-head);font-size:17px;font-weight:700;color:#fff;margin-bottom:10px;">Softmax spreads the mass</h3>
-        <p style="font-size:12px;color:var(--soft);line-height:1.75;">The standard Exponential Mechanism distributes probability across <em>all</em> tokens. Under high privacy budgets, this assigns non-trivial mass to garbage tokens — producing incoherent, low-quality text.</p>
-      </div>
+    <div class="card card-accent-i">
+      <div class="label">Problem 02 · Defence</div>
+      <h3>DP-SGD is too costly</h3>
+      <p>Per-sample gradient clipping scales poorly to billion-parameter models. Inference-time DP decoding — injecting noise into the token selection step — is far more practical, but has its own pitfalls.</p>
+    </div>
+    <div class="card card-accent-g">
+      <div class="label">Problem 03 · Mechanism</div>
+      <h3>Softmax spreads the mass</h3>
+      <p>The standard Exponential Mechanism distributes probability across <em>all</em> tokens. Under high privacy noise, this assigns non-trivial mass to garbage tokens — producing incoherent, low-quality text.</p>
     </div>
   </div>
+</div>
 </div>
 
 <!-- §2 SOLUTION -->
 <div class="sec" id="sec-2">
-  <div class="topbar"><div class="topbar-brand">DA5001 · IIT Madras · 2025</div><div class="topbar-meta"><span>§ 02 — Our Solution</span></div></div>
-  <div class="wrap">
-    <div class="sec-header">
-      <span class="sec-num">§ 02</span>
-      <h2>Our <em>solution</em></h2>
-      <span class="sec-aside">Replace Gumbel with Exponential</span>
-    </div>
-    <div class="sol-grid">
-      <div class="sol-card">
-        <div class="card-label">Core mechanism</div>
-        <h3>RNM with Exponential Noise</h3>
-        <p>Instead of Gumbel noise (Softmax sampling), we add i.i.d. Exponential noise to each logit and take the argmax. This is the <strong style="color:var(--text)">Report-Noisy-Max (RNM)</strong> mechanism.</p>
-        <p>Exponential noise has a <strong style="color:var(--text)">sharper one-sided decay</strong> than Gumbel. It strongly concentrates the winner on the highest-scoring tokens — fighting privacy-induced flattening.</p>
-        <div class="formula">
-          yₜ = argmaxⱼ { ϕ̄ⱼ + Zⱼ },&nbsp;&nbsp; Zⱼ ~ Exp(λ)<br>
-          where &nbsp;λ = 2Δ/ε = 4C/(B·ε)
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;">
-          <span class="tag tag-green">RNM</span>
-          <span class="tag tag-green">Exponential Noise</span>
-          <span class="tag tag-indigo">ε-DP</span>
-          <span class="tag tag-muted">DClip sensitivity</span>
-        </div>
+<div class="wrap">
+  <div class="sec-header">
+    <span class="sec-num">§ 02</span>
+    <h2>Our <em>solution</em></h2>
+    <span class="sec-aside">Replace Gumbel with Exponential</span>
+  </div>
+  <div class="g2">
+    <div class="card card-left">
+      <div class="label">Core mechanism</div>
+      <h3>RNM with Exponential Noise</h3>
+      <p>Instead of Gumbel noise (Softmax sampling), we add i.i.d. Exponential noise to each logit and take the argmax. This is the <strong style="color:var(--text)">Report-Noisy-Max (RNM)</strong> mechanism.</p>
+      <p>Exponential noise has a <strong style="color:var(--text)">sharper one-sided decay</strong> than Gumbel. It strongly concentrates the winner on the highest-scoring tokens — fighting privacy-induced flattening.</p>
+      <div class="formula">
+        yₜ = argmaxⱼ { ϕ̄ⱼ + Zⱼ },&nbsp;&nbsp; Zⱼ ~ Exp(λ)<br>
+        where &nbsp;λ = 2Δ/ε = 4C/(B·ε)
       </div>
-      <div class="sol-card">
-        <div class="card-label">Built on InvisibleInk (Vinod et al. 2025)</div>
-        <h3>Drop-in Replacement</h3>
-        <p><strong style="color:var(--text)">DClip</strong> — clips only the difference between private and public logits, reducing sensitivity to Δ = 2C/B while preserving distributional structure.</p>
-        <p><strong style="color:var(--text)">Top-k⁺ decoding</strong> — restricts sampling to a safe subset derived from public logits, avoiding the unreliable vocabulary tail.</p>
-        <p>We keep both innovations and <strong style="color:var(--text)">swap only the final sampling step</strong>: Gumbel-Max → RNM-Exponential. Same ε. Same framework. Strictly better utility by Theorem 3.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;">
-          <span class="tag tag-muted">DClip</span>
-          <span class="tag tag-muted">Top-k⁺</span>
-          <span class="tag tag-green">Drop-in replacement</span>
-        </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
+        <span class="tag tag-g">RNM</span>
+        <span class="tag tag-g">Exponential Noise</span>
+        <span class="tag tag-i">ε-DP</span>
+        <span class="tag tag-m">DClip sensitivity</span>
+      </div>
+    </div>
+    <div class="card card-left">
+      <div class="label">Built on InvisibleInk (Vinod et al. 2025)</div>
+      <h3>Drop-in Replacement</h3>
+      <p><strong style="color:var(--text)">DClip</strong> — clips only the difference between private and public logits, reducing sensitivity to Δ = 2C/B while preserving distributional structure.</p>
+      <p><strong style="color:var(--text)">Top-k⁺ decoding</strong> — restricts sampling to a safe subset derived from public logits, avoiding the unreliable vocabulary tail.</p>
+      <p>We keep both innovations and <strong style="color:var(--text)">swap only the final sampling step</strong>: Gumbel-Max → RNM-Exponential. Same ε. Same framework. Strictly better utility by Theorem 3.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
+        <span class="tag tag-m">DClip</span>
+        <span class="tag tag-m">Top-k⁺</span>
+        <span class="tag tag-g">Drop-in replacement</span>
       </div>
     </div>
   </div>
+</div>
 </div>
 
 <!-- §3 INTUITION -->
 <div class="sec" id="sec-3">
-  <div class="topbar"><div class="topbar-brand">DA5001 · IIT Madras · 2025</div><div class="topbar-meta"><span>§ 03 — Intuition</span></div></div>
-  <div class="wrap">
-    <div class="sec-header">
-      <span class="sec-num">§ 03</span>
-      <h2>The <em>intuition</em></h2>
-      <span class="sec-aside">Sampling with vs without replacement</span>
-    </div>
+<div class="wrap">
+  <div class="sec-header">
+    <span class="sec-num">§ 03</span>
+    <h2>The <em>intuition</em></h2>
+    <span class="sec-aside">Sampling with vs without replacement</span>
+  </div>
 
-    <div style="margin-bottom:16px;padding:10px 14px;background:rgba(110,231,183,0.04);border:1px solid rgba(110,231,183,0.15);font-size:12px;color:var(--soft);">
-      <strong style="color:var(--accent);">Key insight:</strong> Both mechanisms work like biased coin flips. The only difference is whether rejected tokens go back in the pool.
-      <button class="coin-run-btn" id="sim-btn" onclick="runCoinSim()" style="margin-left:12px;">▶ Run simulation</button>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="font-size:12px;color:var(--soft);background:rgba(110,231,183,.04);border:1px solid rgba(110,231,183,.12);padding:9px 14px;flex:1;">
+      <strong style="color:var(--green);">Key insight:</strong> Both mechanisms work like biased coin flips. The only difference is whether rejected tokens go back in the pool.
     </div>
+    <button class="run-btn" id="sim-btn" onclick="runSim()">▶ Run simulation</button>
+  </div>
 
-    <div class="coin-wrapper">
-      <!-- LEFT: Softmax -->
+  <div class="coin-outer">
+    <div class="coin-top">
+      <div class="ct">The Coin Flip Analogy</div>
+      <h3>Both are coin-flip processes — <em>replacement is the difference</em></h3>
+    </div>
+    <div class="coin-cols">
+      <!-- LEFT -->
       <div class="coin-col">
-        <div class="coin-header red">Softmax · Gumbel-Max <span class="replace-badge yes">with replacement</span></div>
-
-        <div class="token-pool" id="sm-pool">
-          <div class="tok hi"><div class="tc">T1</div><div class="ts">p=0.40</div></div>
-          <div class="tok hi"><div class="tc">T2</div><div class="ts">p=0.28</div></div>
-          <div class="tok mid"><div class="tc">T3</div><div class="ts">p=0.16</div></div>
-          <div class="tok lo"><div class="tc">T4</div><div class="ts">p=0.09</div></div>
-          <div class="tok lo"><div class="tc">T5</div><div class="ts">p=0.07</div></div>
+        <div class="coin-hd red">Softmax · Gumbel-Max <span class="badge-small badge-yes">with replacement</span></div>
+        <div class="tok-row">
+          <div class="tok hi"><div class="tc">T1</div><div class="ts">0.40</div></div>
+          <div class="tok hi"><div class="tc">T2</div><div class="ts">0.28</div></div>
+          <div class="tok mid"><div class="tc">T3</div><div class="ts">0.16</div></div>
+          <div class="tok lo"><div class="tc">T4</div><div class="ts">0.09</div></div>
+          <div class="tok lo"><div class="tc">T5</div><div class="ts">0.07</div></div>
         </div>
-
-        <p class="step-text">Each round: draw a token, flip a biased coin. <strong>Heads → selected. Tails → returned to pool.</strong> Low-scoring tokens can be drawn repeatedly.</p>
-
-        <div class="coin-anim-row" id="sm-coins">
-          <div class="coin-anim" style="border-color:var(--accent);background:rgba(110,231,183,0.08);color:var(--accent);" id="sm-c1">T1</div>
-          <div class="coin-anim" style="border-color:var(--accent);background:rgba(110,231,183,0.08);color:var(--accent);" id="sm-c2">T2</div>
-          <div class="coin-anim" style="border-color:var(--accent3);background:rgba(251,146,60,0.08);color:var(--accent3);" id="sm-c3">T3</div>
-          <div class="coin-anim" style="border-color:var(--red);background:rgba(248,113,113,0.08);color:var(--red);" id="sm-c4">T4</div>
-          <div class="coin-anim" style="border-color:var(--red);background:rgba(248,113,113,0.08);color:var(--red);" id="sm-c5">T5</div>
+        <p class="step-text">Each round: draw a token, flip a biased coin. <strong>Heads → selected. Tails → returned to pool.</strong> Low-scoring tokens can re-enter indefinitely.</p>
+        <div class="coin-row" id="sm-coins">
+          <div class="coin-anim" style="border-color:var(--green);background:rgba(110,231,183,.08);color:var(--green);" id="sm-c1">T1</div>
+          <div class="coin-anim" style="border-color:var(--green);background:rgba(110,231,183,.08);color:var(--green);" id="sm-c2">T2</div>
+          <div class="coin-anim" style="border-color:var(--orange);background:rgba(251,146,60,.08);color:var(--orange);" id="sm-c3">T3</div>
+          <div class="coin-anim" style="border-color:var(--red);background:rgba(248,113,113,.08);color:var(--red);" id="sm-c4">T4</div>
+          <div class="coin-anim" style="border-color:var(--red);background:rgba(248,113,113,.08);color:var(--red);" id="sm-c5">T5</div>
         </div>
-        <div id="sm-result-text" style="font-size:11px;color:var(--muted);margin-top:8px;height:20px;"></div>
-
-        <div class="verdict-row bad" style="margin-top:12px;">Tail tokens persist · bad choices recur · quality degrades</div>
+        <div class="sim-result" id="sm-res"></div>
+        <div class="verdict bad">Tail tokens persist · bad choices recur · quality degrades</div>
       </div>
-
       <div class="coin-vs"><span>vs</span></div>
-
-      <!-- RIGHT: RNM -->
+      <!-- RIGHT -->
       <div class="coin-col">
-        <div class="coin-header green">RNM-Exponential · Permute-and-Flip <span class="replace-badge no">without replacement</span></div>
-
-        <div class="token-pool" id="rnm-pool">
-          <div class="tok hi"><div class="tc">T1</div><div class="ts">p=0.40</div></div>
-          <div class="tok hi"><div class="tc">T2</div><div class="ts">p=0.28</div></div>
-          <div class="tok mid"><div class="tc">T3</div><div class="ts">p=0.16</div></div>
-          <div class="tok lo" id="rnm-t4"><div class="tc">T4</div><div class="ts">p=0.09</div></div>
-          <div class="tok lo" id="rnm-t5"><div class="tc">T5</div><div class="ts">p=0.07</div></div>
+        <div class="coin-hd grn">RNM-Exponential · Permute-and-Flip <span class="badge-small badge-no">without replacement</span></div>
+        <div class="tok-row">
+          <div class="tok hi"><div class="tc">T1</div><div class="ts">0.40</div></div>
+          <div class="tok hi"><div class="tc">T2</div><div class="ts">0.28</div></div>
+          <div class="tok mid"><div class="tc">T3</div><div class="ts">0.16</div></div>
+          <div class="tok lo" id="rnm-t4"><div class="tc">T4</div><div class="ts">0.09</div></div>
+          <div class="tok lo" id="rnm-t5"><div class="tc">T5</div><div class="ts">0.07</div></div>
         </div>
-
-        <p class="step-text">Same process, but <strong>rejected tokens are permanently eliminated.</strong> Low-scoring tokens deplete first. The pool fills with high-quality candidates.</p>
-
-        <div class="coin-anim-row" id="rnm-coins">
-          <div class="coin-anim" style="border-color:var(--accent);background:rgba(110,231,183,0.08);color:var(--accent);" id="rnm-c1">T1</div>
-          <div class="coin-anim" style="border-color:var(--accent);background:rgba(110,231,183,0.08);color:var(--accent);" id="rnm-c2">T2</div>
-          <div class="coin-anim" style="border-color:var(--accent3);background:rgba(251,146,60,0.08);color:var(--accent3);" id="rnm-c3">T3</div>
-          <div class="coin-anim" style="border-color:var(--red);background:rgba(248,113,113,0.08);color:var(--red);" id="rnm-c4">T4</div>
-          <div class="coin-anim" style="border-color:var(--red);background:rgba(248,113,113,0.08);color:var(--red);" id="rnm-c5">T5</div>
+        <p class="step-text">Same process, but <strong>rejected tokens are permanently eliminated.</strong> Low-scoring tokens deplete first. The pool concentrates on high-quality candidates.</p>
+        <div class="coin-row" id="rnm-coins">
+          <div class="coin-anim" style="border-color:var(--green);background:rgba(110,231,183,.08);color:var(--green);" id="rnm-c1">T1</div>
+          <div class="coin-anim" style="border-color:var(--green);background:rgba(110,231,183,.08);color:var(--green);" id="rnm-c2">T2</div>
+          <div class="coin-anim" style="border-color:var(--orange);background:rgba(251,146,60,.08);color:var(--orange);" id="rnm-c3">T3</div>
+          <div class="coin-anim" style="border-color:var(--red);background:rgba(248,113,113,.08);color:var(--red);" id="rnm-c4">T4</div>
+          <div class="coin-anim" style="border-color:var(--red);background:rgba(248,113,113,.08);color:var(--red);" id="rnm-c5">T5</div>
         </div>
-        <div id="rnm-result-text" style="font-size:11px;color:var(--muted);margin-top:8px;height:20px;"></div>
-
-        <div class="verdict-row good" style="margin-top:12px;">Tail tokens eliminated · head tokens win · quality preserved</div>
+        <div class="sim-result" id="rnm-res"></div>
+        <div class="verdict good">Tail tokens eliminated · head tokens win · quality preserved</div>
       </div>
     </div>
   </div>
+</div>
 </div>
 
 <!-- §4 MATH -->
 <div class="sec" id="sec-4">
-  <div class="topbar"><div class="topbar-brand">DA5001 · IIT Madras · 2025</div><div class="topbar-meta"><span>§ 04 — Mathematical Foundation</span></div></div>
-  <div class="wrap">
-    <div class="sec-header">
-      <span class="sec-num">§ 04</span>
-      <h2>Mathematical <em>foundation</em></h2>
-      <span class="sec-aside">Three supporting theorems</span>
+<div class="wrap">
+  <div class="sec-header">
+    <span class="sec-num">§ 04</span>
+    <h2>Mathematical <em>foundation</em></h2>
+    <span class="sec-aside">Three supporting theorems</span>
+  </div>
+  <div class="g3">
+    <div class="thm card-accent-g">
+      <div class="thm-l">Theorem 1 · Equivalence</div>
+      <h4>RNM-Exp ≡ Permute-and-Flip</h4>
+      <p>Ding et al. (2021) proved that adding i.i.d. Exponential noise to scores and taking the argmax produces <strong style="color:var(--text)">exactly the same output distribution</strong> as the Permute-and-Flip mechanism.</p>
+      <div class="formula">argmaxᵢ (qᵢ + Exp(λ)) ~ PF(q)</div>
+      <p>This lets us implement the simple RNM rule while inheriting all of PF's utility guarantees — including its known dominance over the Exponential Mechanism.</p>
     </div>
-    <div class="thm-grid">
-      <div class="thm t1">
-        <div class="thm-label">Theorem 1 · Equivalence</div>
-        <h4>RNM-Exp ≡ Permute-and-Flip</h4>
-        <p>Ding et al. (2021) proved that adding i.i.d. Exponential noise to scores and taking the argmax produces <strong style="color:var(--text)">exactly the same output distribution</strong> as the Permute-and-Flip mechanism.</p>
-        <div class="formula">argmaxᵢ (qᵢ + Exp(λ)) ~ PF(q)</div>
-        <p>This lets us implement the simple RNM rule while inheriting all of PF's theoretical utility guarantees — including its known dominance over the Exponential Mechanism.</p>
-      </div>
-      <div class="thm t2">
-        <div class="thm-label">Theorem 2 · Privacy</div>
-        <h4>Strict ε-DP under DClip</h4>
-        <p>With DClip sensitivity Δ = 2C/B, calibrating the Exponential noise scale to λ = 2Δ/ε guarantees pure ε-differential privacy.</p>
-        <div class="formula">λ = 4C / (B · ε)</div>
-        <p>The proof follows a change-of-variables argument on the RNM probability integral, showing the likelihood ratio across adjacent datasets is bounded by eᵉ.</p>
-      </div>
-      <div class="thm t3">
-        <div class="thm-label">Theorem 3 · Utility</div>
-        <h4>PF dominates EM — up to 2× better</h4>
-        <p>For any privacy budget ε and any score distribution, the expected error of PF/RNM-Exp is <strong style="color:var(--text)">always ≤</strong> the expected error of the Exponential Mechanism.</p>
-        <div class="formula">E[E_PF] ≤ E[E_EM] &nbsp;∀ ε, q</div>
-        <p>In the asymptotic limit, the error ratio converges exactly to 2 — PF is <strong style="color:var(--accent3)">twice as accurate</strong> as EM under the same privacy budget.</p>
-      </div>
+    <div class="thm card-accent-i">
+      <div class="thm-l">Theorem 2 · Privacy</div>
+      <h4>Strict ε-DP under DClip</h4>
+      <p>With DClip sensitivity Δ = 2C/B, calibrating the Exponential noise scale to λ = 2Δ/ε guarantees pure ε-differential privacy.</p>
+      <div class="formula">λ = 4C / (B · ε)</div>
+      <p>The proof follows a change-of-variables argument on the RNM probability integral, showing the likelihood ratio across adjacent datasets is bounded by eᵉ.</p>
+    </div>
+    <div class="thm card-accent-o">
+      <div class="thm-l">Theorem 3 · Utility</div>
+      <h4>PF dominates EM — up to 2× better</h4>
+      <p>For any privacy budget ε and any score distribution, the expected error of PF/RNM-Exp is <strong style="color:var(--text)">always ≤</strong> the expected error of the Exponential Mechanism.</p>
+      <div class="formula">E[E_PF] ≤ E[E_EM] &nbsp;∀ ε, q</div>
+      <p>In the asymptotic limit, the error ratio converges exactly to 2 — PF is <strong style="color:var(--orange)">twice as accurate</strong> as EM under the same privacy budget.</p>
     </div>
   </div>
+</div>
 </div>
 
 <!-- §5 SIMULATION -->
 <div class="sec" id="sec-5">
-  <div class="topbar"><div class="topbar-brand">DA5001 · IIT Madras · 2025</div><div class="topbar-meta"><span>§ 05 — Toy Simulation</span></div></div>
-  <div class="wrap">
-    <div class="sec-header">
-      <span class="sec-num">§ 05</span>
-      <h2>Toy <em>simulation</em></h2>
-      <span class="sec-aside">20,000 trials · ε = 2.0</span>
-    </div>
-    <div class="sim-grid">
-      <div class="plot-frame"><div class="plot-title">Selection probability vs token rank</div><canvas id="chart-prob" height="220"></canvas></div>
-      <div class="plot-frame"><div class="plot-title">Expected error vs p (n=5, ε=1, Δ=1)</div><canvas id="chart-error" height="220"></canvas></div>
-    </div>
-    <div class="sim-full">
-      <div class="plot-frame"><div class="plot-title">Worst-case expected error vs vocabulary size n</div><canvas id="chart-scale" height="120"></canvas></div>
-    </div>
-    <div class="findings-grid">
-      <div class="finding f1"><div class="fl">Equivalence</div><p>Softmax ≡ Gumbel-Max ≡ sampling-with-replacement. RNM-Exp ≡ Permute-and-Flip. Both match perfectly across 20k trials.</p></div>
-      <div class="finding f2"><div class="fl">Utility gap</div><p>PF/RNM consistently selects higher-scoring tokens for the same ε. Gap widens as privacy budget tightens.</p></div>
-      <div class="finding f3"><div class="fl">Tail suppression</div><p>Softmax assigns persistent probability to tail tokens. PF aggressively truncates — low-ranked tokens approach zero.</p></div>
-      <div class="finding f4"><div class="fl">2× error reduction</div><p>PF error ≤ EM error across all vocab sizes. Ratio converges to exactly 2 as p → 0, validating Theorem 3.</p></div>
-    </div>
+<div class="wrap">
+  <div class="sec-header">
+    <span class="sec-num">§ 05</span>
+    <h2>Toy <em>simulation</em></h2>
+    <span class="sec-aside">20,000 trials · ε = 2.0</span>
   </div>
+  <div class="g2" style="margin-bottom:1px;">
+    <div class="plot"><div class="plot-t">Selection probability vs token rank</div><canvas id="chart-prob"></canvas></div>
+    <div class="plot"><div class="plot-t">Expected error vs p (n=5, ε=1, Δ=1)</div><canvas id="chart-error"></canvas></div>
+  </div>
+  <div style="margin-bottom:1px;">
+    <div class="plot plot-sm"><div class="plot-t">Worst-case expected error vs vocabulary size n</div><canvas id="chart-scale"></canvas></div>
+  </div>
+  <div class="g4">
+    <div class="finding" style="--fl:var(--green)"><div class="fl">Equivalence</div><p>Softmax ≡ Gumbel-Max. RNM-Exp ≡ Permute-and-Flip. Both match exactly across 20k trials.</p></div>
+    <div class="finding" style="--fl:#4ade80"><div class="fl">Utility gap</div><p>PF/RNM consistently selects higher-scoring tokens. Gap widens as privacy budget tightens.</p></div>
+    <div class="finding" style="--fl:var(--indigo)"><div class="fl">Tail suppression</div><p>Softmax gives persistent mass to tail tokens. PF aggressively truncates — low-ranked tokens approach zero.</p></div>
+    <div class="finding" style="--fl:var(--orange)"><div class="fl">2× error reduction</div><p>PF error ≤ EM error across all vocab sizes. Ratio converges to exactly 2 as p → 0, validating Thm. 3.</p></div>
+  </div>
+</div>
 </div>
 
 <!-- §6 RESULTS -->
 <div class="sec" id="sec-6">
-  <div class="topbar"><div class="topbar-brand">DA5001 · IIT Madras · 2025</div><div class="topbar-meta"><span>§ 06 — Real Data Results</span></div></div>
-  <div class="wrap">
-    <div class="sec-header">
-      <span class="sec-num">§ 06</span>
-      <h2>Real data <em>results</em></h2>
-      <span class="sec-aside">TAB · Yelp · PubMed · 100 samples/ε</span>
-    </div>
+<div class="wrap">
+  <div class="sec-header">
+    <span class="sec-num">§ 06</span>
+    <h2>Real data <em>results</em></h2>
+    <span class="sec-aside">TAB · Yelp · PubMed · 100 samples/ε</span>
+  </div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-      <div class="dtabs" style="margin-bottom:0;border-bottom:none;">
-        <button class="dtab active" onclick="switchDS('tab',this)">TAB</button>
-        <button class="dtab" onclick="switchDS('yelp',this)">Yelp</button>
-        <button class="dtab" onclick="switchDS('pubmed',this)">PubMed</button>
-      </div>
-      <button class="show-sample-btn" id="sample-btn" onclick="openSamplePopup()">◈ View generated text samples</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <div class="dtabs" style="margin-bottom:0;border-bottom:none;">
+      <button class="dtab active" onclick="switchDS('tab',this)">TAB</button>
+      <button class="dtab" onclick="switchDS('yelp',this)">Yelp</button>
+      <button class="dtab" onclick="switchDS('pubmed',this)">PubMed</button>
     </div>
-    <div style="border-top:1px solid var(--border);margin-bottom:24px;"></div>
+    <button class="samples-btn" onclick="popOpen()">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 6h12M4 10h8M4 14h6"/><rect x="1" y="1" width="18" height="18" rx="2"/>
+      </svg>
+      View generated text samples
+    </button>
+  </div>
+  <div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>
 
-    <div class="dpanel active" id="dp-tab">
-      <div class="res-grid">
-        <div class="eps-stack">
-          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Select ε</div>
-          <button class="eps-btn active" onclick="switchEps('tab',0,this)"><span class="ev">ε₁</span><span class="el">Low privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('tab',1,this)"><span class="ev">ε₂</span><span class="el">Medium privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('tab',2,this)"><span class="ev">ε₃</span><span class="el">High privacy</span></button>
-        </div>
-        <div class="metrics-grid" id="mc-tab">
-          <div class="mc-frame"><div class="mc-title">PPL (↓ better)</div><canvas id="tab-ppl-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">BERTScore (↑ better)</div><canvas id="tab-bert-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">MAUVE (↑ better)</div><canvas id="tab-mauve-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">Rep-3 (↓) · TTR (↑)</div><canvas id="tab-rep-0" height="140"></canvas></div>
-        </div>
+  <div class="dpanel active" id="dp-tab">
+    <div class="res-grid">
+      <div class="eps-stack">
+        <div class="label">Select ε</div>
+        <button class="eps-btn active" onclick="switchEps('tab',0,this)"><span class="ev">ε₁</span><span class="el">Low privacy</span></button>
+        <button class="eps-btn" onclick="switchEps('tab',1,this)"><span class="ev">ε₂</span><span class="el">Medium privacy</span></button>
+        <button class="eps-btn" onclick="switchEps('tab',2,this)"><span class="ev">ε₃</span><span class="el">High privacy</span></button>
       </div>
-    </div>
-    <div class="dpanel" id="dp-yelp">
-      <div class="res-grid">
-        <div class="eps-stack">
-          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Select ε</div>
-          <button class="eps-btn active" onclick="switchEps('yelp',0,this)"><span class="ev">ε₁</span><span class="el">Low privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('yelp',1,this)"><span class="ev">ε₂</span><span class="el">Medium privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('yelp',2,this)"><span class="ev">ε₃</span><span class="el">High privacy</span></button>
-        </div>
-        <div class="metrics-grid" id="mc-yelp">
-          <div class="mc-frame"><div class="mc-title">PPL (↓ better)</div><canvas id="yelp-ppl-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">BERTScore (↑ better)</div><canvas id="yelp-bert-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">MAUVE (↑ better)</div><canvas id="yelp-mauve-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">Rep-3 (↓) · TTR (↑)</div><canvas id="yelp-rep-0" height="140"></canvas></div>
-        </div>
+      <div class="mc-grid" id="mc-tab">
+        <div class="mc-frame"><div class="mc-t">PPL (↓ better)</div><canvas id="tab-ppl-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">BERTScore (↑ better)</div><canvas id="tab-bert-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">MAUVE (↑ better)</div><canvas id="tab-mauve-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">Rep-3 (↓) · TTR (↑)</div><canvas id="tab-rep-0"></canvas></div>
       </div>
-    </div>
-    <div class="dpanel" id="dp-pubmed">
-      <div class="res-grid">
-        <div class="eps-stack">
-          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Select ε</div>
-          <button class="eps-btn active" onclick="switchEps('pubmed',0,this)"><span class="ev">ε₁</span><span class="el">Low privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('pubmed',1,this)"><span class="ev">ε₂</span><span class="el">Medium privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('pubmed',2,this)"><span class="ev">ε₃</span><span class="el">High privacy</span></button>
-        </div>
-        <div class="metrics-grid" id="mc-pubmed">
-          <div class="mc-frame"><div class="mc-title">PPL (↓ better)</div><canvas id="pubmed-ppl-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">BERTScore (↑ better)</div><canvas id="pubmed-bert-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">MAUVE (↑ better)</div><canvas id="pubmed-mauve-0" height="140"></canvas></div>
-          <div class="mc-frame"><div class="mc-title">Rep-3 (↓) · TTR (↑)</div><canvas id="pubmed-rep-0" height="140"></canvas></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="note-box">
-      <strong>Note:</strong> Click "View generated text samples" above to see qualitative comparison between Softmax and RNM-Exp output at each ε level. Replace <code>RESULTS_DATA</code> and <code>SAMPLE_DATA</code> in the script with your actual experimental results.
     </div>
   </div>
+  <div class="dpanel" id="dp-yelp">
+    <div class="res-grid">
+      <div class="eps-stack">
+        <div class="label">Select ε</div>
+        <button class="eps-btn active" onclick="switchEps('yelp',0,this)"><span class="ev">ε₁</span><span class="el">Low privacy</span></button>
+        <button class="eps-btn" onclick="switchEps('yelp',1,this)"><span class="ev">ε₂</span><span class="el">Medium privacy</span></button>
+        <button class="eps-btn" onclick="switchEps('yelp',2,this)"><span class="ev">ε₃</span><span class="el">High privacy</span></button>
+      </div>
+      <div class="mc-grid" id="mc-yelp">
+        <div class="mc-frame"><div class="mc-t">PPL (↓ better)</div><canvas id="yelp-ppl-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">BERTScore (↑ better)</div><canvas id="yelp-bert-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">MAUVE (↑ better)</div><canvas id="yelp-mauve-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">Rep-3 (↓) · TTR (↑)</div><canvas id="yelp-rep-0"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="dpanel" id="dp-pubmed">
+    <div class="res-grid">
+      <div class="eps-stack">
+        <div class="label">Select ε</div>
+        <button class="eps-btn active" onclick="switchEps('pubmed',0,this)"><span class="ev">ε₁</span><span class="el">Low privacy</span></button>
+        <button class="eps-btn" onclick="switchEps('pubmed',1,this)"><span class="ev">ε₂</span><span class="el">Medium privacy</span></button>
+        <button class="eps-btn" onclick="switchEps('pubmed',2,this)"><span class="ev">ε₃</span><span class="el">High privacy</span></button>
+      </div>
+      <div class="mc-grid" id="mc-pubmed">
+        <div class="mc-frame"><div class="mc-t">PPL (↓ better)</div><canvas id="pubmed-ppl-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">BERTScore (↑ better)</div><canvas id="pubmed-bert-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">MAUVE (↑ better)</div><canvas id="pubmed-mauve-0"></canvas></div>
+        <div class="mc-frame"><div class="mc-t">Rep-3 (↓) · TTR (↑)</div><canvas id="pubmed-rep-0"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Placeholder data shown.</strong> Replace <code>RESULTS_DATA</code> and <code>SAMPLE_DATA</code> in the script with your actual experimental results. Charts regenerate automatically on selection.
+  </div>
+</div>
 </div>
 
 <!-- §7 ROAD AHEAD -->
 <div class="sec" id="sec-7">
-  <div class="topbar"><div class="topbar-brand">DA5001 · IIT Madras · 2025</div><div class="topbar-meta"><span>§ 07 — Road Ahead</span></div></div>
-  <div class="wrap">
-    <div class="sec-header">
-      <span class="sec-num">§ 07</span>
-      <h2>The road <em>ahead</em></h2>
-      <span class="sec-aside">Completion plan</span>
+<div class="wrap">
+  <div class="sec-header">
+    <span class="sec-num">§ 07</span>
+    <h2>The road <em>ahead</em></h2>
+    <span class="sec-aside">Completion plan</span>
+  </div>
+  <div class="g2" style="margin-bottom:28px;">
+    <div class="fc card-accent-g">
+      <span class="fcn">01</span>
+      <span class="fc-s done">Complete</span>
+      <h3>Theory & Simulation</h3>
+      <p>Proved ε-DP guarantee, established PF equivalence, derived utility bounds, ran 20,000-trial toy simulations confirming all theoretical claims including the 2× error reduction limit.</p>
     </div>
-    <div class="future-grid">
-      <div class="fc">
-        <span class="fcn">01</span>
-        <span class="fc-status done">Complete</span>
-        <h3>Theory & Simulation</h3>
-        <p>Proved ε-DP guarantee, established PF equivalence, derived utility bounds, ran 20,000-trial toy simulations confirming all theoretical claims including the 2× error reduction limit.</p>
-      </div>
-      <div class="fc">
-        <span class="fcn">02</span>
-        <span class="fc-status inprog">In Progress</span>
-        <h3>Real Data Evaluation</h3>
-        <p>Running RNM-Exponential and Softmax on TAB, Yelp, and PubMed at three ε values. Collecting PPL, BERTScore, MAUVE, Rep-3, and TTR for both mechanisms.</p>
-      </div>
-      <div class="fc">
-        <span class="fcn">03</span>
-        <span class="fc-status inprog">In Progress</span>
-        <h3>InvisibleInk Integration</h3>
-        <p>Reproducing the exact experimental setup from Vinod et al. (2025) — same datasets, parameters, and comparison table. Inserting RNM-Exp as a new row.</p>
-      </div>
-      <div class="fc">
-        <span class="fcn">04</span>
-        <span class="fc-status planned">If Needed</span>
-        <h3>Loss Function Alignment</h3>
-        <p>If RNM-Exp underperforms despite theoretical superiority, we'll design a numerically stable loss function under Exponential noise that scales O(|V|) with vocabulary size.</p>
-      </div>
+    <div class="fc card-accent-i">
+      <span class="fcn">02</span>
+      <span class="fc-s prog">In Progress</span>
+      <h3>Real Data Evaluation</h3>
+      <p>Running RNM-Exponential and Softmax on TAB, Yelp, and PubMed at three ε values. Collecting PPL, BERTScore, MAUVE, Rep-3, and TTR for both mechanisms.</p>
     </div>
+    <div class="fc card-accent-i">
+      <span class="fcn">03</span>
+      <span class="fc-s prog">In Progress</span>
+      <h3>InvisibleInk Integration</h3>
+      <p>Reproducing the exact experimental setup from Vinod et al. (2025) — same datasets, parameters, and comparison table — with RNM-Exp as a new row.</p>
+    </div>
+    <div class="fc card-accent-o">
+      <span class="fcn">04</span>
+      <span class="fc-s plan">If Needed</span>
+      <h3>Loss Function Alignment</h3>
+      <p>If RNM-Exp underperforms despite theoretical superiority, we'll design a numerically stable loss function under Exponential noise scaling O(|V|) with vocabulary size.</p>
+    </div>
+  </div>
 
-    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:24px;border-top:1px solid var(--border);padding-top:24px;">
-      <div>
-        <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Team</div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;">
-          <div style="font-size:11px;"><span style="display:block;color:var(--accent);font-size:9px;letter-spacing:.15em;margin-bottom:3px;">DA24B016</span>M.M. Pruthvi Raj</div>
-          <div style="font-size:11px;"><span style="display:block;color:var(--accent);font-size:9px;letter-spacing:.15em;margin-bottom:3px;">DA24B028</span>Aakash Aadhithya</div>
-          <div style="font-size:11px;"><span style="display:block;color:var(--accent);font-size:9px;letter-spacing:.15em;margin-bottom:3px;">DA24B050</span>Rishikesh V</div>
-        </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;border-top:1px solid var(--border);padding-top:22px;">
+    <div>
+      <div class="label">Team</div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:4px;">
+        <div style="font-size:11px;"><span style="display:block;color:var(--green);font-size:9px;letter-spacing:.15em;margin-bottom:2px;">DA24B016</span>M.M. Pruthvi Raj</div>
+        <div style="font-size:11px;"><span style="display:block;color:var(--green);font-size:9px;letter-spacing:.15em;margin-bottom:2px;">DA24B028</span>Aakash Aadhithya</div>
+        <div style="font-size:11px;"><span style="display:block;color:var(--green);font-size:9px;letter-spacing:.15em;margin-bottom:2px;">DA24B050</span>Rishikesh V</div>
       </div>
-      <div>
-        <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Key References</div>
-        <div style="display:flex;flex-direction:column;gap:7px;">
-          <div style="font-size:12px;color:var(--soft);padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:var(--accent);font-size:10px;">1.</span>Vinod, Pillutla & Thakurta. InvisibleInk. arXiv:2507.02974, 2025.</div>
-          <div style="font-size:12px;color:var(--soft);padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:var(--accent);font-size:10px;">2.</span>McKenna & Sheldon. Permute-and-Flip. NeurIPS 2020.</div>
-          <div style="font-size:12px;color:var(--soft);padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:var(--accent);font-size:10px;">3.</span>Ding et al. PF ≡ RNM-Exp. arXiv:2105.07260, 2021.</div>
-          <div style="font-size:12px;color:var(--soft);padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:var(--accent);font-size:10px;">4.</span>Zhao, Li & Wang. Optimal stable decoder. ICLR 2025.</div>
-        </div>
+    </div>
+    <div>
+      <div class="label">Key References</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+        <div style="font-size:12px;color:var(--soft);padding-left:14px;position:relative;"><span style="position:absolute;left:0;color:var(--green);font-size:10px;">1.</span>Vinod, Pillutla & Thakurta. InvisibleInk. arXiv:2507.02974, 2025.</div>
+        <div style="font-size:12px;color:var(--soft);padding-left:14px;position:relative;"><span style="position:absolute;left:0;color:var(--green);font-size:10px;">2.</span>McKenna & Sheldon. Permute-and-Flip. NeurIPS 2020.</div>
+        <div style="font-size:12px;color:var(--soft);padding-left:14px;position:relative;"><span style="position:absolute;left:0;color:var(--green);font-size:10px;">3.</span>Ding et al. PF ≡ RNM-Exp. arXiv:2105.07260, 2021.</div>
+        <div style="font-size:12px;color:var(--soft);padding-left:14px;position:relative;"><span style="position:absolute;left:0;color:var(--green);font-size:10px;">4.</span>Zhao, Li & Wang. Optimal stable decoder. ICLR 2025.</div>
       </div>
     </div>
   </div>
 </div>
+</div>
 
-<!-- ── NAV BAR ── -->
+<!-- ══ BOTTOM NAV ══ -->
 <nav class="nav-bar">
-  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-  </button>
-  <span class="nav-progress" id="nav-prog">1 / 8</span>
-  <div class="nav-dots" id="nav-dots"></div>
-  <span class="nav-section-name" id="nav-name">Home</span>
-  <button class="nav-btn" id="btn-next" onclick="navigate(1)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
-  </button>
+  <div class="nav-inner">
+    <button class="nav-btn home" id="btn-home" onclick="goSec(0)" title="Home">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M3 10L10 3l7 7"/><path d="M7 19v-6h6v6"/>
+      </svg>
+    </button>
+    <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 16l-5-6 5-6" stroke-linecap="round"/></svg>
+      Prev
+    </button>
+    <span class="nav-progress" id="nav-prog">1 / 8</span>
+    <div class="nav-dots" id="nav-dots"></div>
+    <span class="nav-secname" id="nav-name">Home</span>
+    <button class="nav-btn" id="btn-next" onclick="navigate(1)">
+      Next
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4l5 6-5 6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
 </nav>
 
 <script>
-// ══ 3D NETWORK BACKGROUND ══
-(function(){
-  var canvas = document.getElementById('network-canvas');
-  var ctx = canvas.getContext('2d');
-  var W, H, nodes = [], TOTAL_SECS = 8;
-  var currentHighlight = 0;
+'use strict';
 
-  function resize(){
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  // Build nodes — one per section in 3D space
-  var nodePositions = [
-    {x:0.15, y:0.2, z:0},
-    {x:0.35, y:0.7, z:0.3},
-    {x:0.6,  y:0.3, z:0.6},
-    {x:0.8,  y:0.65,z:0.2},
-    {x:0.5,  y:0.5, z:0.8},
-    {x:0.25, y:0.45,z:0.5},
-    {x:0.7,  y:0.2, z:0.4},
-    {x:0.45, y:0.8, z:0.1},
-  ];
-
-  for(var i=0;i<TOTAL_SECS;i++){
-    nodes.push({
-      bx: nodePositions[i].x,
-      by: nodePositions[i].y,
-      bz: nodePositions[i].z,
-      // Animated wobble
-      wx: Math.random()*Math.PI*2,
-      wy: Math.random()*Math.PI*2,
-      wSpeed: 0.002 + Math.random()*0.003,
-      idx: i,
-      // Ball state: 0=ball, 1=unfolding, 2=flat
-      state: i===0 ? 2 : 0,
-      unfoldProgress: i===0 ? 1 : 0,
-      radius: 0,
-    });
-  }
-
-  // Edges: sequential + a few skips
-  var edges = [];
-  for(var i=0;i<TOTAL_SECS-1;i++) edges.push([i,i+1]);
-  edges.push([0,4],[1,5],[2,6]);
-
-  function project(nx, ny, nz, t){
-    // Simple perspective
-    var fov = 0.6;
-    var camZ = 2 + Math.sin(t*0.0003)*0.2;
-    var scale = fov / (fov + nz);
-    var sx = W * (0.1 + nx * 0.8) * scale + W * 0.5 * (1-scale);
-    var sy = H * (0.1 + ny * 0.8) * scale + H * 0.5 * (1-scale);
-    return {x:sx, y:sy, scale:scale};
-  }
-
-  var t = 0;
-  function draw(){
-    ctx.clearRect(0,0,W,H);
-    t++;
-
-    // Update node positions with wobble
-    nodes.forEach(function(n, i){
-      n.wx += n.wSpeed;
-      n.wy += n.wSpeed * 0.7;
-      var wobbleX = Math.sin(n.wx) * 0.015;
-      var wobbleY = Math.cos(n.wy) * 0.015;
-      n.px = n.bx + wobbleX;
-      n.py = n.by + wobbleY;
-      n.pz = n.bz + Math.sin(n.wx*0.5)*0.05;
-
-      var proj = project(n.px, n.py, n.pz, t);
-      n.sx = proj.x;
-      n.sy = proj.y;
-      n.ps = proj.scale;
-
-      // Update unfold
-      if(i === currentHighlight){
-        n.unfoldProgress = Math.min(1, n.unfoldProgress + 0.04);
-        n.state = n.unfoldProgress >= 1 ? 2 : 1;
-      } else {
-        n.unfoldProgress = Math.max(0, n.unfoldProgress - 0.03);
-        n.state = n.unfoldProgress <= 0 ? 0 : 1;
-      }
-    });
-
-    // Draw edges
-    edges.forEach(function(e){
-      var a = nodes[e[0]], b = nodes[e[1]];
-      var isActive = e[0]===currentHighlight||e[1]===currentHighlight;
-      ctx.beginPath();
-      ctx.moveTo(a.sx, a.sy);
-      ctx.lineTo(b.sx, b.sy);
-      ctx.strokeStyle = isActive ? 'rgba(110,231,183,0.18)' : 'rgba(30,30,46,0.8)';
-      ctx.lineWidth = isActive ? 1 : 0.5;
-      if(!isActive){ ctx.setLineDash([4,8]); } else { ctx.setLineDash([]); }
-      ctx.stroke();
-      ctx.setLineDash([]);
-    });
-
-    // Draw nodes
-    nodes.forEach(function(n){
-      var r = 6 * n.ps;
-      var isActive = n.idx === currentHighlight;
-      var up = n.unfoldProgress;
-
-      if(up <= 0){
-        // Pure ball
-        ctx.beginPath();
-        ctx.arc(n.sx, n.sy, r, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(30,30,46,0.9)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(100,116,139,0.4)';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-        // Specular highlight
-        ctx.beginPath();
-        ctx.arc(n.sx - r*0.25, n.sy - r*0.3, r*0.25, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        ctx.fill();
-      } else if(up >= 1){
-        // Flat glowing circle for active
-        ctx.beginPath();
-        ctx.arc(n.sx, n.sy, r*1.3, 0, Math.PI*2);
-        ctx.fillStyle = isActive ? 'rgba(110,231,183,0.15)' : 'rgba(30,30,46,0.5)';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(n.sx, n.sy, r, 0, Math.PI*2);
-        ctx.fillStyle = isActive ? 'rgba(110,231,183,0.5)' : 'rgba(100,116,139,0.3)';
-        ctx.fill();
-        // Label
-        ctx.font = '500 9px DM Mono, monospace';
-        ctx.fillStyle = isActive ? 'rgba(110,231,183,0.9)' : 'rgba(100,116,139,0.6)';
-        ctx.textAlign = 'center';
-        ctx.fillText('S'+(n.idx+1), n.sx, n.sy + r*2.2);
-      } else {
-        // Mid-unfold: squished ellipse → circle transition
-        var scaleY = up;  // squishes from top (0) to full circle (1)
-        ctx.save();
-        ctx.translate(n.sx, n.sy);
-        ctx.scale(1, scaleY);
-        ctx.beginPath();
-        ctx.arc(0, 0, r, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(110,231,183,' + (up*0.3) + ')';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(110,231,183,' + (up*0.8) + ')';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.restore();
-      }
-    });
-
-    requestAnimationFrame(draw);
-  }
-  draw();
-
-  window.setNetworkHighlight = function(idx){ currentHighlight = idx; };
-})();
-
-// ══ SECTION SYSTEM ══
+/* ════════════════════════════
+   SECTION NAVIGATION
+════════════════════════════ */
 const SEC_NAMES = ['Home','Problem','Solution','Intuition','Math','Simulation','Results','Road Ahead'];
-let currentSec = 0;
 const TOTAL = 8;
-let transitioning = false;
+let cur = 0;
+let busy = false; // guard against double-clicks
 
 // Build nav dots
 const dotsEl = document.getElementById('nav-dots');
-for(let i=0;i<TOTAL;i++){
+for (let i = 0; i < TOTAL; i++) {
   const d = document.createElement('div');
-  d.className = 'nav-dot' + (i===0?' active':'');
-  d.onclick = ()=>goSec(i);
+  d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goSec(i);
   d.title = SEC_NAMES[i];
   dotsEl.appendChild(d);
 }
 
-function goSec(n){
-  if(transitioning || n===currentSec) return;
-  n = Math.max(0, Math.min(TOTAL-1, n));
-  transitioning = true;
-
-  const leaving = document.getElementById('sec-'+currentSec);
-  const entering = document.getElementById('sec-'+n);
-
-  leaving.classList.add('leaving');
-  setTimeout(()=>{
-    leaving.classList.remove('active','leaving');
-    entering.classList.add('active','entering');
-    entering.scrollTop = 0;
-    setTimeout(()=>entering.classList.remove('entering'), 700);
-    transitioning = false;
-  }, 380);
-
-  currentSec = n;
-  setNetworkHighlight(n);
-  document.getElementById('nav-prog').textContent = (n+1)+' / '+TOTAL;
-  document.getElementById('nav-name').textContent = SEC_NAMES[n];
-  document.getElementById('btn-prev').disabled = n===0;
-  document.getElementById('btn-next').disabled = n===TOTAL-1;
-  document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===n));
-
-  if(n===5 && !simBuilt){ buildSimCharts(); simBuilt=true; }
-  if(n===6){ setTimeout(()=>renderDatasetCharts(activeDS, activeEps[activeDS]), 100); }
+function updateNav() {
+  document.getElementById('nav-prog').textContent = (cur + 1) + ' / ' + TOTAL;
+  document.getElementById('nav-name').textContent = SEC_NAMES[cur];
+  document.getElementById('btn-prev').disabled = cur === 0;
+  document.getElementById('btn-next').disabled = cur === TOTAL - 1;
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === cur));
 }
 
-function navigate(dir){ goSec(currentSec+dir); }
-document.addEventListener('keydown', e=>{
-  if(e.key==='ArrowRight'||e.key==='ArrowDown') navigate(1);
-  if(e.key==='ArrowLeft'||e.key==='ArrowUp') navigate(-1);
+function goSec(n) {
+  n = Math.max(0, Math.min(TOTAL - 1, n));
+  if (n === cur || busy) return;
+  busy = true;
+
+  const leaving = document.getElementById('sec-' + cur);
+  const entering = document.getElementById('sec-' + n);
+
+  // Step 1: fade out current
+  leaving.classList.add('fade-out');
+
+  // Step 2: after fade-out, hide it, show new one fading in
+  setTimeout(() => {
+    leaving.classList.remove('active', 'fade-out');
+    cur = n;
+    updateNav();
+
+    entering.classList.add('active');
+    entering.scrollTop = 0;
+    // Force a reflow before adding animation class
+    entering.offsetHeight; // eslint-disable-line
+    entering.classList.add('fade-in');
+
+    // Step 3: clean up animation class after it's done
+    setTimeout(() => {
+      entering.classList.remove('fade-in');
+      busy = false;
+    }, 360);
+
+    // Lazy init
+    if (n === 5 && !simBuilt) { buildSimCharts(); simBuilt = true; }
+    if (n === 6) { setTimeout(() => renderDatasetCharts(activeDS, activeEps[activeDS]), 80); }
+  }, 240);
+}
+
+function navigate(dir) { goSec(cur + dir); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
 });
 
-// ══ CHART SETUP ══
-const C = {
-  sm:  { bg:'rgba(248,113,113,0.25)', border:'#f87171' },
-  rnm: { bg:'rgba(110,231,183,0.2)',  border:'#6ee7b7' }
-};
-Chart.defaults.color = '#64748b';
-Chart.defaults.borderColor = 'rgba(30,30,46,1)';
-const chartInst = {};
+updateNav();
 
-function mkBar(id, labels, smVals, rnmVals){
-  const ctx = document.getElementById(id);
-  if(!ctx) return;
-  if(chartInst[id]){ chartInst[id].destroy(); delete chartInst[id]; }
-  chartInst[id] = new Chart(ctx, {
-    type:'bar',
-    data:{ labels, datasets:[
-      { label:'Softmax',  data:smVals,  backgroundColor:C.sm.bg,  borderColor:C.sm.border,  borderWidth:1.5, borderRadius:2 },
-      { label:'RNM-Exp', data:rnmVals, backgroundColor:C.rnm.bg, borderColor:C.rnm.border, borderWidth:1.5, borderRadius:2 }
-    ]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ font:{family:'DM Mono',size:9}, color:'#64748b', boxWidth:10 } } },
-      scales:{
-        x:{ ticks:{font:{family:'DM Mono',size:9}}, grid:{color:'rgba(30,30,46,0.8)'} },
-        y:{ ticks:{font:{family:'DM Mono',size:9}}, grid:{color:'rgba(30,30,46,0.8)'} }
+/* ════════════════════════════
+   COIN SIM
+════════════════════════════ */
+let simRunning = false;
+const probs = [0.40, 0.28, 0.16, 0.09, 0.07];
+const names = ['T1','T2','T3','T4','T5'];
+
+function resetSim() {
+  document.getElementById('rnm-t4').className = 'tok lo';
+  document.getElementById('rnm-t5').className = 'tok lo';
+  document.getElementById('sm-res').textContent = '';
+  document.getElementById('rnm-res').textContent = '';
+  // reset coin colors
+  for (let i = 1; i <= 5; i++) {
+    const colors = [
+      ['var(--green)','rgba(110,231,183,.08)'],
+      ['var(--green)','rgba(110,231,183,.08)'],
+      ['var(--orange)','rgba(251,146,60,.08)'],
+      ['var(--red)','rgba(248,113,113,.08)'],
+      ['var(--red)','rgba(248,113,113,.08)'],
+    ];
+    ['sm','rnm'].forEach(pre => {
+      const el = document.getElementById(pre + '-c' + i);
+      if (el) {
+        el.style.borderColor = colors[i-1][0];
+        el.style.background  = colors[i-1][1];
+        el.style.color       = colors[i-1][0];
+        el.style.opacity     = '1';
+      }
+    });
+  }
+}
+
+function runSim() {
+  if (simRunning) return;
+  simRunning = true;
+  resetSim();
+  const btn = document.getElementById('sim-btn');
+  btn.disabled = true;
+  btn.textContent = '⟳ Running…';
+
+  let smDone = false, rnmDone = false;
+  const rnmElim = new Set();
+  let step = 0;
+
+  function tick() {
+    if (step++ > 20) { finish(); return; }
+
+    // Softmax draw (with replacement)
+    if (!smDone) {
+      const pick = Math.floor(Math.random() * 5);
+      const el = document.getElementById('sm-c' + (pick + 1));
+      el.classList.add('flip');
+      setTimeout(() => el.classList.remove('flip'), 460);
+      if (Math.random() < probs[pick]) {
+        smDone = true;
+        el.style.borderColor = 'var(--green)';
+        el.style.background  = 'rgba(110,231,183,.3)';
+        el.style.color       = 'var(--green)';
+        document.getElementById('sm-res').textContent = '→ Selected: ' + names[pick];
       }
     }
+
+    // RNM draw (without replacement)
+    if (!rnmDone) {
+      const avail = [0,1,2,3,4].filter(i => !rnmElim.has(i));
+      if (!avail.length) { rnmDone = true; }
+      else {
+        const pick = avail[Math.floor(Math.random() * avail.length)];
+        const el = document.getElementById('rnm-c' + (pick + 1));
+        el.classList.add('flip');
+        setTimeout(() => el.classList.remove('flip'), 460);
+        if (Math.random() < probs[pick]) {
+          rnmDone = true;
+          el.style.borderColor = 'var(--green)';
+          el.style.background  = 'rgba(110,231,183,.3)';
+          el.style.color       = 'var(--green)';
+          document.getElementById('rnm-res').textContent = '→ Selected: ' + names[pick];
+        } else {
+          rnmElim.add(pick);
+          const pelId = pick >= 3 ? 'rnm-t' + (pick + 1) : null;
+          if (pelId) {
+            const pel = document.getElementById(pelId);
+            if (pel) pel.className = 'tok out';
+          }
+          el.style.opacity = '0.2';
+        }
+      }
+    }
+
+    if (!smDone || !rnmDone) setTimeout(tick, 620);
+    else finish();
+  }
+
+  function finish() {
+    simRunning = false;
+    btn.disabled = false;
+    btn.textContent = '▶ Run again';
+  }
+
+  tick();
+}
+
+/* ════════════════════════════
+   CHART HELPERS
+════════════════════════════ */
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = 'rgba(30,30,46,1)';
+const CI = {}; // chart instances
+
+const C = {
+  sm:  { bg:'rgba(248,113,113,.22)', border:'#f87171' },
+  rnm: { bg:'rgba(110,231,183,.18)', border:'#6ee7b7' }
+};
+
+const chartOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { font:{family:'DM Mono',size:9}, color:'#64748b', boxWidth:10 } }
+  },
+  scales: {
+    x: { ticks:{font:{family:'DM Mono',size:9}}, grid:{color:'rgba(30,30,46,.8)'} },
+    y: { ticks:{font:{family:'DM Mono',size:9}}, grid:{color:'rgba(30,30,46,.8)'} }
+  }
+};
+
+function mkBar(id, labels, smV, rnmV) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (CI[id]) { CI[id].destroy(); delete CI[id]; }
+  CI[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [
+      { label:'Softmax',  data:smV,  backgroundColor:C.sm.bg,  borderColor:C.sm.border,  borderWidth:1.5, borderRadius:2 },
+      { label:'RNM-Exp', data:rnmV, backgroundColor:C.rnm.bg, borderColor:C.rnm.border, borderWidth:1.5, borderRadius:2 }
+    ]},
+    options: chartOpts
   });
 }
 
-// ══ RESULTS DATA ══
-const RESULTS_DATA = {
-  tab:[
+function mkLine(id, labels, ds) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (CI[id]) { CI[id].destroy(); delete CI[id]; }
+  CI[id] = new Chart(ctx, { type:'line', data:{ labels, datasets:ds }, options:{ ...chartOpts, elements:{point:{radius:2}} } });
+}
+
+/* ════════════════════════════
+   RESULTS DATA
+════════════════════════════ */
+const RD = {
+  tab: [
     { ppl:[142,118], bert:[0.62,0.67], mauve:[0.31,0.39], rep:[0.28,0.21], ttr:[0.44,0.51] },
     { ppl:[89,74],   bert:[0.71,0.75], mauve:[0.48,0.55], rep:[0.19,0.14], ttr:[0.55,0.61] },
     { ppl:[54,48],   bert:[0.79,0.81], mauve:[0.63,0.67], rep:[0.13,0.10], ttr:[0.64,0.68] },
   ],
-  yelp:[
+  yelp: [
     { ppl:[198,161], bert:[0.58,0.64], mauve:[0.26,0.35], rep:[0.33,0.24], ttr:[0.38,0.47] },
     { ppl:[121,103], bert:[0.67,0.72], mauve:[0.43,0.51], rep:[0.23,0.17], ttr:[0.50,0.58] },
     { ppl:[71,63],   bert:[0.76,0.79], mauve:[0.58,0.63], rep:[0.15,0.12], ttr:[0.61,0.65] },
   ],
-  pubmed:[
+  pubmed: [
     { ppl:[231,189], bert:[0.55,0.61], mauve:[0.22,0.31], rep:[0.38,0.27], ttr:[0.35,0.44] },
     { ppl:[148,124], bert:[0.64,0.70], mauve:[0.39,0.48], rep:[0.26,0.19], ttr:[0.47,0.55] },
     { ppl:[88,76],   bert:[0.73,0.77], mauve:[0.54,0.60], rep:[0.17,0.13], ttr:[0.58,0.63] },
   ]
 };
 
-let activeDS = 'tab', activeEps = {tab:0,yelp:0,pubmed:0};
+let activeDS = 'tab';
+const activeEps = { tab:0, yelp:0, pubmed:0 };
 
-function renderDatasetCharts(ds, ei){
-  const d = RESULTS_DATA[ds][ei];
-  mkBar(`${ds}-ppl-${ei}`,  ['PPL'],          [d.ppl[0]],           [d.ppl[1]]);
-  mkBar(`${ds}-bert-${ei}`, ['BERTScore'],    [d.bert[0]],          [d.bert[1]]);
-  mkBar(`${ds}-mauve-${ei}`,[' MAUVE'],        [d.mauve[0]],         [d.mauve[1]]);
-  mkBar(`${ds}-rep-${ei}`,  ['Rep-3','TTR'], [d.rep[0],d.ttr[0]], [d.rep[1],d.ttr[1]]);
+function renderDatasetCharts(ds, ei) {
+  const d = RD[ds][ei];
+  mkBar(ds+'-ppl-'+ei,  ['PPL'],          [d.ppl[0]],           [d.ppl[1]]);
+  mkBar(ds+'-bert-'+ei, ['BERTScore'],    [d.bert[0]],          [d.bert[1]]);
+  mkBar(ds+'-mauve-'+ei,[' MAUVE'],        [d.mauve[0]],         [d.mauve[1]]);
+  mkBar(ds+'-rep-'+ei,  ['Rep-3','TTR'],  [d.rep[0],d.ttr[0]], [d.rep[1],d.ttr[1]]);
 }
 
-function switchDS(ds, btn){
-  document.querySelectorAll('.dpanel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(`dp-${ds}`).classList.add('active');
+function switchDS(ds, btn) {
+  document.querySelectorAll('.dpanel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('dp-' + ds).classList.add('active');
   btn.classList.add('active');
   activeDS = ds;
-  setTimeout(()=>renderDatasetCharts(ds, activeEps[ds]), 60);
+  setTimeout(() => renderDatasetCharts(ds, activeEps[ds]), 60);
 }
 
-function switchEps(ds, ei, btn){
+function switchEps(ds, ei, btn) {
   activeEps[ds] = ei;
-  btn.closest('.eps-stack').querySelectorAll('.eps-btn').forEach(b=>b.classList.remove('active'));
+  btn.closest('.eps-stack').querySelectorAll('.eps-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const cont = document.getElementById(`mc-${ds}`);
-  if(!document.getElementById(`${ds}-ppl-${ei}`)){
-    const titles=['PPL (↓ better)','BERTScore (↑ better)','MAUVE (↑ better)','Rep-3 (↓) · TTR (↑)'];
-    cont.innerHTML = ['ppl','bert','mauve','rep'].map((m,i)=>`
-      <div class="mc-frame"><div class="mc-title">${titles[i]}</div><canvas id="${ds}-${m}-${ei}" height="140"></canvas></div>
-    `).join('');
+  const cont = document.getElementById('mc-' + ds);
+  if (!document.getElementById(ds + '-ppl-' + ei)) {
+    const titles = ['PPL (↓ better)','BERTScore (↑ better)','MAUVE (↑ better)','Rep-3 (↓) · TTR (↑)'];
+    cont.innerHTML = ['ppl','bert','mauve','rep'].map((m, i) =>
+      '<div class="mc-frame"><div class="mc-t">' + titles[i] + '</div><canvas id="' + ds + '-' + m + '-' + ei + '"></canvas></div>'
+    ).join('');
   }
-  setTimeout(()=>renderDatasetCharts(ds, ei), 60);
+  setTimeout(() => renderDatasetCharts(ds, ei), 60);
 }
 
-// ══ SAMPLE TEXT DATA ══
-// Replace with actual generated samples from your experiments
-const SAMPLE_DATA = {
+/* ════════════════════════════
+   SAMPLE DATA
+════════════════════════════ */
+const SD = {
   tab: [
-    {
-      eps: 'ε₁ (low privacy, high noise)',
-      ref: 'The quarterly revenue showed a modest increase of 3.2% compared to the previous period, driven primarily by strong performance in the enterprise segment and international expansion.',
-      sm:  'The quarterly revenue showed a modest increase the the the the previous of previous previous previous period, driven primarily by strong performance of enterprise enterprise international international expansion expansion expansion.',
-      rnm: 'The quarterly revenue showed a modest increase of 3.1% compared to the previous period, driven primarily by strong performance in enterprise segments and continued international expansion.',
-      pub: 'Prompt: "The quarterly revenue showed..." (from TAB test split)',
-      comment: 'At low privacy budget (ε₁), Softmax degenerates into repetition loops — the "the the the" pattern is a classic symptom of tail-token accumulation. RNM-Exp suppresses these tokens early, producing coherent continuation. The Rep-3 score of 0.28 vs 0.21 confirms this quantitatively.'
-    },
-    {
-      eps: 'ε₂ (medium privacy)',
-      ref: 'Analysts forecast continued growth in the sector, citing favourable macroeconomic conditions and increased consumer spending across key demographics.',
-      sm:  'Analysts forecast continued growth in the sector, citing favourable conditions conditions and conditions increased spending across across demographics demographics the sector.',
-      rnm: 'Analysts forecast continued growth in the sector, citing favourable macroeconomic tailwinds and increased consumer spending across key demographics and age groups.',
-      pub: 'Prompt: "Analysts forecast continued growth..." (TAB test split)',
-      comment: 'At medium ε, both methods improve significantly, but Softmax still shows mild repetition. RNM-Exp produces vocabulary more consistent with the reference. BERTScore gap of 0.71 vs 0.75 reflects the semantic similarity advantage.'
-    },
-    {
-      eps: 'ε₃ (high privacy, low noise)',
-      ref: 'The board approved the dividend reinvestment plan, subject to shareholder ratification at the upcoming annual general meeting.',
-      sm:  'The board approved the dividend reinvestment plan, subject to shareholder ratification at the upcoming annual general meeting scheduled for next quarter.',
-      rnm: 'The board approved the dividend reinvestment plan, subject to shareholder ratification at the upcoming annual general meeting, in line with regulatory guidance.',
-      pub: 'Prompt: "The board approved the dividend..." (TAB test split)',
-      comment: 'At high privacy budget, both methods produce fluent text with minor stylistic differences. The PPL advantage for RNM-Exp (54 vs 48) is still measurable but small — consistent with theory predicting diminishing gains as ε → ∞.'
-    }
+    { eps:'ε₁ — low privacy (high noise)', ref:'The quarterly revenue showed a modest increase of 3.2% compared to the previous period, driven primarily by strong performance in the enterprise segment and international expansion.', sm:'The quarterly revenue showed a modest increase the the the the previous of previous previous previous period, driven primarily by strong performance of enterprise enterprise international international expansion expansion expansion.', rnm:'The quarterly revenue showed a modest increase of 3.1% compared to the previous period, driven primarily by strong performance in enterprise segments and continued international expansion.', pub:'Prompt: "The quarterly revenue showed…" (TAB test split)', note:'At low privacy budget (ε₁), Softmax degenerates into repetition loops. The "the the the" pattern is a classic symptom of tail-token accumulation. RNM-Exp suppresses these tokens early, producing coherent continuation. The Rep-3 score of 0.28 vs 0.21 confirms this quantitatively.' },
+    { eps:'ε₂ — medium privacy', ref:'Analysts forecast continued growth in the sector, citing favourable macroeconomic conditions and increased consumer spending across key demographics.', sm:'Analysts forecast continued growth in the sector, citing favourable conditions conditions and conditions increased spending across across demographics demographics the sector.', rnm:'Analysts forecast continued growth in the sector, citing favourable macroeconomic tailwinds and increased consumer spending across key demographics and age groups.', pub:'Prompt: "Analysts forecast continued growth…" (TAB test split)', note:'At medium ε, both methods improve significantly, but Softmax still shows mild repetition. RNM-Exp produces vocabulary more consistent with the reference. BERTScore gap of 0.71 vs 0.75 reflects the semantic similarity advantage.' },
+    { eps:'ε₃ — high privacy (low noise)', ref:'The board approved the dividend reinvestment plan, subject to shareholder ratification at the upcoming annual general meeting.', sm:'The board approved the dividend reinvestment plan, subject to shareholder ratification at the upcoming annual general meeting scheduled for next quarter.', rnm:'The board approved the dividend reinvestment plan, subject to shareholder ratification at the upcoming annual general meeting, in line with regulatory guidance.', pub:'Prompt: "The board approved the dividend…" (TAB test split)', note:'At high privacy budget both methods produce fluent text with minor stylistic differences. The PPL advantage for RNM-Exp (54 vs 48) is still measurable — consistent with theory predicting diminishing gains as ε → ∞.' },
   ],
   yelp: [
-    {
-      eps: 'ε₁ (low privacy, high noise)',
-      ref: 'The food was absolutely incredible. Fresh ingredients, bold flavours, and the service was attentive without being intrusive.',
-      sm:  'The food was absolutely the the the the ingredients food ingredients food and the the was attentive and and and without being being being.',
-      rnm: 'The food was absolutely incredible. Fresh ingredients and bold flavours throughout. Service was attentive and the atmosphere relaxed.',
-      pub: 'Prompt: "The food was absolutely..." (Yelp test split)',
-      comment: 'Yelp reviews show the most dramatic quality gap at ε₁. Softmax degenerates severely — the MAUVE score of 0.26 vs 0.35 reflects how far off-distribution the Softmax samples are. RNM-Exp maintains review structure and sentiment.'
-    },
-    {
-      eps: 'ε₂ (medium privacy)',
-      ref: 'Highly recommend the pasta dishes. The carbonara was perfectly executed and the tiramisu was a highlight of the evening.',
-      sm:  'Highly recommend the pasta dishes. The carbonara was perfectly executed and the tiramisu was highlight highlight the the evening evening.',
-      rnm: 'Highly recommend the pasta dishes here. The carbonara was perfectly executed and the tiramisu was a genuine highlight of the evening.',
-      pub: 'Prompt: "Highly recommend the pasta..." (Yelp test split)',
-      comment: 'Both methods capture the positive sentiment, but Softmax still trails with minor repetition artefacts. The TTR score difference (0.50 vs 0.58) reflects the vocabulary diversity advantage of RNM-Exp.'
-    },
-    {
-      eps: 'ε₃ (high privacy, low noise)',
-      ref: 'Decent neighbourhood spot. Nothing extraordinary but solid execution on the basics. Would return for a casual weeknight dinner.',
-      sm:  'Decent neighbourhood spot. Nothing extraordinary but solid execution on the basics. Worth returning for weeknight dinner options.',
-      rnm: 'Decent neighbourhood spot. Nothing extraordinary but solid execution on the basics. Would return for a casual weeknight meal.',
-      pub: 'Prompt: "Decent neighbourhood spot..." (Yelp test split)',
-      comment: 'At high ε, both methods nearly converge in output quality. Residual BERTScore gap (0.76 vs 0.79) is statistically meaningful across 100 samples but qualitatively hard to see in individual examples.'
-    }
+    { eps:'ε₁ — low privacy (high noise)', ref:'The food was absolutely incredible. Fresh ingredients, bold flavours, and the service was attentive without being intrusive.', sm:'The food was absolutely the the the the ingredients food ingredients food and the the was attentive and and and without being being being.', rnm:'The food was absolutely incredible. Fresh ingredients and bold flavours throughout. Service was attentive and the atmosphere relaxed.', pub:'Prompt: "The food was absolutely…" (Yelp test split)', note:'Yelp reviews show the most dramatic quality gap at ε₁. Softmax degenerates severely — MAUVE score of 0.26 vs 0.35 reflects how far off-distribution the Softmax samples are. RNM-Exp maintains review structure and sentiment.' },
+    { eps:'ε₂ — medium privacy', ref:'Highly recommend the pasta dishes. The carbonara was perfectly executed and the tiramisu was a highlight of the evening.', sm:'Highly recommend the pasta dishes. The carbonara was perfectly executed and the tiramisu was highlight highlight the the evening evening.', rnm:'Highly recommend the pasta dishes here. The carbonara was perfectly executed and the tiramisu was a genuine highlight of the evening.', pub:'Prompt: "Highly recommend the pasta…" (Yelp test split)', note:'Both methods capture the positive sentiment, but Softmax still trails with minor repetition artefacts. The TTR score difference (0.50 vs 0.58) reflects the vocabulary diversity advantage of RNM-Exp.' },
+    { eps:'ε₃ — high privacy (low noise)', ref:'Decent neighbourhood spot. Nothing extraordinary but solid execution on the basics. Would return for a casual weeknight dinner.', sm:'Decent neighbourhood spot. Nothing extraordinary but solid execution on the basics. Worth returning for weeknight dinner options.', rnm:'Decent neighbourhood spot. Nothing extraordinary but solid execution on the basics. Would return for a casual weeknight meal.', pub:'Prompt: "Decent neighbourhood spot…" (Yelp test split)', note:'At ε₃, both outputs are clinically plausible. Residual BERTScore gap (0.76 vs 0.79) is statistically meaningful across 100 samples but qualitatively hard to see in individual examples.' },
   ],
   pubmed: [
-    {
-      eps: 'ε₁ (low privacy, high noise)',
-      ref: 'Patients receiving the experimental treatment showed a statistically significant reduction in inflammatory markers at 12 weeks post-intervention.',
-      sm:  'Patients receiving the the experimental treatment showed a statistically significant the the reduction in the the the markers at at 12 12 weeks post post intervention.',
-      rnm: 'Patients receiving the experimental treatment showed a statistically significant reduction in key inflammatory markers at 12 weeks post-intervention, measured by CRP levels.',
-      pub: 'Prompt: "Patients receiving the experimental..." (PubMed test split)',
-      comment: 'PubMed abstracts are the hardest domain — technical vocabulary means bad token choices are severe. At ε₁, Softmax degenerates most dramatically here (PPL=231 vs 189). RNM-Exp maintains clinical coherence, preserving domain-specific terminology.'
-    },
-    {
-      eps: 'ε₂ (medium privacy)',
-      ref: 'The meta-analysis included 14 randomised controlled trials with a combined sample of 3,842 participants across diverse geographic regions.',
-      sm:  'The meta-analysis included 14 randomised controlled trials with combined sample of 3842 participants across diverse geographic diverse geographic regions regions.',
-      rnm: 'The meta-analysis included 14 randomised controlled trials with a combined sample of 3,842 participants spanning diverse geographic regions and clinical settings.',
-      pub: 'Prompt: "The meta-analysis included 14..." (PubMed test split)',
-      comment: 'Factual density in clinical text makes repetition especially damaging. Softmax repeats "diverse geographic" twice — a hallucination-adjacent error. RNM-Exp extends sensibly instead. BERTScore gap: 0.64 vs 0.70.'
-    },
-    {
-      eps: 'ε₃ (high privacy, low noise)',
-      ref: 'Multivariate logistic regression identified age and baseline severity score as independent predictors of treatment response.',
-      sm:  'Multivariate logistic regression identified age and baseline severity score as independent predictors of treatment response in the study cohort.',
-      rnm: 'Multivariate logistic regression identified age and baseline severity score as the primary independent predictors of treatment response across all subgroups.',
-      pub: 'Prompt: "Multivariate logistic regression..." (PubMed test split)',
-      comment: 'At ε₃, both outputs are clinically plausible. RNM-Exp adds "across all subgroups" — a common and valid scientific qualifier. Softmax adds "in the study cohort" — also valid. Quality gap narrows as predicted by theory.'
-    }
+    { eps:'ε₁ — low privacy (high noise)', ref:'Patients receiving the experimental treatment showed a statistically significant reduction in inflammatory markers at 12 weeks post-intervention.', sm:'Patients receiving the the experimental treatment showed a statistically significant the the reduction in the the the markers at at 12 12 weeks post post intervention.', rnm:'Patients receiving the experimental treatment showed a statistically significant reduction in key inflammatory markers at 12 weeks post-intervention, measured by CRP levels.', pub:'Prompt: "Patients receiving the experimental…" (PubMed test split)', note:'PubMed abstracts are the hardest domain — technical vocabulary means bad token choices are severe. At ε₁, Softmax degenerates most dramatically (PPL=231 vs 189). RNM-Exp maintains clinical coherence, preserving domain-specific terminology.' },
+    { eps:'ε₂ — medium privacy', ref:'The meta-analysis included 14 randomised controlled trials with a combined sample of 3,842 participants across diverse geographic regions.', sm:'The meta-analysis included 14 randomised controlled trials with combined sample of 3842 participants across diverse geographic diverse geographic regions regions.', rnm:'The meta-analysis included 14 randomised controlled trials with a combined sample of 3,842 participants spanning diverse geographic regions and clinical settings.', pub:'Prompt: "The meta-analysis included 14…" (PubMed test split)', note:'Factual density in clinical text makes repetition especially damaging. Softmax repeats "diverse geographic" twice. RNM-Exp extends sensibly instead. BERTScore gap: 0.64 vs 0.70.' },
+    { eps:'ε₃ — high privacy (low noise)', ref:'Multivariate logistic regression identified age and baseline severity score as independent predictors of treatment response.', sm:'Multivariate logistic regression identified age and baseline severity score as independent predictors of treatment response in the study cohort.', rnm:'Multivariate logistic regression identified age and baseline severity score as the primary independent predictors of treatment response across all subgroups.', pub:'Prompt: "Multivariate logistic regression…" (PubMed test split)', note:'At ε₃, both outputs are clinically plausible. RNM-Exp adds "across all subgroups" — a common valid scientific qualifier. Quality gap narrows as predicted by theory.' },
   ]
 };
 
-let currentPopupDS = 'tab', currentPopupEi = 0;
+let popDS = 'tab', popEi = 0;
 
-function openSamplePopup(){
-  currentPopupDS = activeDS;
-  currentPopupEi = activeEps[activeDS];
-  loadPopupData();
-  document.getElementById('sample-popup').classList.add('open');
+function renderPop() {
+  const d = SD[popDS][popEi];
+  document.getElementById('pop-eps-tag').textContent = d.eps;
+  document.getElementById('p-ref').textContent = d.ref;
+  document.getElementById('p-pub').textContent = d.pub;
+  document.getElementById('p-sm').textContent  = d.sm;
+  document.getElementById('p-rnm').textContent = d.rnm;
+  document.getElementById('p-note').textContent = d.note;
+  // sync selector states
+  ['tab','yelp','pubmed'].forEach(ds => document.getElementById('pn-' + ds).classList.toggle('active', ds === popDS));
+  [0,1,2].forEach(i => document.getElementById('pe-' + i).classList.toggle('active', i === popEi));
+}
+
+function popOpen() {
+  popDS = activeDS; popEi = activeEps[activeDS];
+  renderPop();
+  document.getElementById('pop').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
-
-function loadPopupData(){
-  const d = SAMPLE_DATA[currentPopupDS][currentPopupEi];
-  document.getElementById('popup-eps-label').textContent = d.eps;
-  document.getElementById('popup-ref').textContent = d.ref;
-  document.getElementById('popup-sm').textContent = d.sm;
-  document.getElementById('popup-rnm').textContent = d.rnm;
-  document.getElementById('popup-pub').textContent = d.pub;
-  document.getElementById('popup-comment').textContent = d.comment;
+function popSetDS(ds, btn) { popDS = ds; renderPop(); }
+function popSetEps(ei, btn) { popEi = ei; renderPop(); }
+function popClose(e) { if (e.target.id === 'pop') popCloseDirect(); }
+function popCloseDirect() {
+  document.getElementById('pop').classList.remove('open');
+  document.body.style.overflow = '';
 }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') popCloseDirect(); });
 
-function closeSamplePopup(e){ if(e.target.id==='sample-popup') closeSamplePopupDirect(); }
-function closeSamplePopupDirect(){
-  document.getElementById('sample-popup').classList.remove('open');
-  document.body.style.overflow='';
-}
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSamplePopupDirect(); });
-
-// ══ COIN SIM ══
-let coinSimRunning = false;
-function runCoinSim(){
-  if(coinSimRunning) return;
-  coinSimRunning = true;
-  document.getElementById('sim-btn').disabled = true;
-  document.getElementById('sim-btn').textContent = '⟳ Running...';
-
-  // Reset pools
-  document.getElementById('rnm-t4').className = 'tok lo';
-  document.getElementById('rnm-t5').className = 'tok lo';
-  document.getElementById('sm-result-text').textContent = '';
-  document.getElementById('rnm-result-text').textContent = '';
-
-  const probs = [0.40, 0.28, 0.16, 0.09, 0.07];
-  const names = ['T1','T2','T3','T4','T5'];
-  let smEliminated = new Set();
-  let rnmEliminated = new Set();
-  let smSelected = null, rnmSelected = null;
-  let step = 0;
-  const maxSteps = 12;
-
-  function flipStep(){
-    if(smSelected && rnmSelected){ finish(); return; }
-    if(step >= maxSteps){ finish(); return; }
-    step++;
-
-    // SM: pick random uneliminated (always all 5 available)
-    if(!smSelected){
-      const avail = [0,1,2,3,4];
-      const pick = avail[Math.floor(Math.random()*avail.length)];
-      const el = document.getElementById(`sm-c${pick+1}`);
-      el.classList.add('flip');
-      setTimeout(()=>el.classList.remove('flip'), 500);
-      // Biased coin
-      if(Math.random() < probs[pick]){
-        smSelected = pick;
-        el.style.borderColor = 'var(--accent)';
-        el.style.background = 'rgba(110,231,183,0.3)';
-        document.getElementById('sm-result-text').textContent = '→ Selected: '+names[pick];
-      }
-    }
-
-    // RNM: eliminate on fail
-    if(!rnmSelected){
-      const avail = [0,1,2,3,4].filter(i=>!rnmEliminated.has(i));
-      if(avail.length===0){ rnmSelected=-1; }
-      else {
-        const pick = avail[Math.floor(Math.random()*avail.length)];
-        const el = document.getElementById(`rnm-c${pick+1}`);
-        el.classList.add('flip');
-        setTimeout(()=>el.classList.remove('flip'), 500);
-        if(Math.random() < probs[pick]){
-          rnmSelected = pick;
-          el.style.borderColor = 'var(--accent)';
-          el.style.background = 'rgba(110,231,183,0.3)';
-          document.getElementById('rnm-result-text').textContent = '→ Selected: '+names[pick];
-        } else {
-          rnmEliminated.add(pick);
-          // grey out in pool
-          if(pick >= 3){
-            const poolEl = document.getElementById(`rnm-t${pick+1}`);
-            if(poolEl) poolEl.className = 'tok out';
-          }
-        }
-      }
-    }
-
-    if(!smSelected || !rnmSelected) setTimeout(flipStep, 600);
-    else finish();
-  }
-
-  function finish(){
-    document.getElementById('sim-btn').disabled = false;
-    document.getElementById('sim-btn').textContent = '▶ Run again';
-    coinSimRunning = false;
-  }
-
-  flipStep();
-}
-
-// ══ SIM CHARTS ══
+/* ════════════════════════════
+   SIMULATION CHARTS (§5)
+   — only built once, on first visit
+════════════════════════════ */
 let simBuilt = false;
-function buildSimCharts(){
-  const ranks = Array.from({length:12},(_,i)=>`T${i+1}`);
+
+function buildSimCharts() {
+  const ranks = Array.from({length:12}, (_, i) => 'T' + (i+1));
   const smP  = [0.41,0.22,0.12,0.08,0.06,0.04,0.02,0.015,0.01,0.008,0.005,0.003];
   const rnmP = [0.63,0.21,0.08,0.04,0.02,0.01,0.005,0.003,0.001,0.001,0.0005,0.0002];
 
-  const cP = document.getElementById('chart-prob');
-  if(cP){
-    if(chartInst['cp']){ chartInst['cp'].destroy(); }
-    chartInst['cp'] = new Chart(cP,{type:'bar',data:{labels:ranks,datasets:[
-      {label:'Softmax (EM)',data:smP,backgroundColor:C.sm.bg,borderColor:C.sm.border,borderWidth:1.5,borderRadius:2},
-      {label:'RNM-Exp (PF)',data:rnmP,backgroundColor:C.rnm.bg,borderColor:C.rnm.border,borderWidth:1.5,borderRadius:2}
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Mono',size:9},color:'#64748b',boxWidth:10}}},scales:{x:{ticks:{font:{family:'DM Mono',size:9}},grid:{color:'rgba(30,30,46,0.8)'}},y:{ticks:{font:{family:'DM Mono',size:9}},grid:{color:'rgba(30,30,46,0.8)'}}}}});
+  const makeOpts = (h) => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { font:{family:'DM Mono',size:9}, color:'#64748b', boxWidth:10 } } },
+    scales: {
+      x: { ticks:{font:{family:'DM Mono',size:9}}, grid:{color:'rgba(30,30,46,.8)'} },
+      y: { ticks:{font:{family:'DM Mono',size:9}}, grid:{color:'rgba(30,30,46,.8)'} }
+    }
+  });
+
+  const cp = document.getElementById('chart-prob');
+  if (cp) {
+    cp.style.maxHeight = '200px';
+    CI['cp'] = new Chart(cp, { type:'bar', data:{ labels:ranks, datasets:[
+      { label:'Softmax (EM)',  data:smP,  backgroundColor:C.sm.bg,  borderColor:C.sm.border,  borderWidth:1.5, borderRadius:2 },
+      { label:'RNM-Exp (PF)', data:rnmP, backgroundColor:C.rnm.bg, borderColor:C.rnm.border, borderWidth:1.5, borderRadius:2 }
+    ]}, options: makeOpts(200) });
   }
 
-  const pVals=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9];
-  const emE=pVals.map(p=>(4*p)/(1+4*p));
-  const pfE=pVals.map(p=>1-(1-(1-p)**5)/(5*p));
-  const cE = document.getElementById('chart-error');
-  if(cE){
-    if(chartInst['ce']){ chartInst['ce'].destroy(); }
-    chartInst['ce'] = new Chart(cE,{type:'line',data:{labels:pVals.map(p=>p.toFixed(1)),datasets:[
-      {label:'EM (Softmax)',data:emE,borderColor:C.sm.border,backgroundColor:'rgba(248,113,113,0.06)',tension:0.4,pointRadius:3},
-      {label:'PF (RNM-Exp)',data:pfE,borderColor:C.rnm.border,backgroundColor:'rgba(110,231,183,0.06)',tension:0.4,pointRadius:3}
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Mono',size:9},color:'#64748b',boxWidth:10}}},scales:{x:{ticks:{font:{family:'DM Mono',size:9}},grid:{color:'rgba(30,30,46,0.8)'}},y:{ticks:{font:{family:'DM Mono',size:9}},grid:{color:'rgba(30,30,46,0.8)'}}}}});
+  const pVals = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9];
+  const emE = pVals.map(p => (4*p)/(1+4*p));
+  const pfE = pVals.map(p => 1 - (1-(1-p)**5)/(5*p));
+  const ce = document.getElementById('chart-error');
+  if (ce) {
+    ce.style.maxHeight = '200px';
+    CI['ce'] = new Chart(ce, { type:'line', data:{ labels:pVals.map(p=>p.toFixed(1)), datasets:[
+      { label:'EM (Softmax)', data:emE, borderColor:C.sm.border,  backgroundColor:'rgba(248,113,113,.06)', tension:.4, pointRadius:3 },
+      { label:'PF (RNM-Exp)',data:pfE, borderColor:C.rnm.border, backgroundColor:'rgba(110,231,183,.06)', tension:.4, pointRadius:3 }
+    ]}, options: makeOpts(200) });
   }
 
-  const ns=[2,5,10,20,50,100,500,1000,5000,10000];
-  const emW=ns.map(n=>(2/1)*Math.log(n));
-  const pfW=ns.map(n=>{let s=0;for(let i=1;i<=n;i++)s+=1/i;return (2/1)*s;});
-  const cS = document.getElementById('chart-scale');
-  if(cS){
-    if(chartInst['cs']){ chartInst['cs'].destroy(); }
-    chartInst['cs'] = new Chart(cS,{type:'line',data:{labels:ns.map(n=>n.toString()),datasets:[
-      {label:'EM worst-case',data:emW,borderColor:C.sm.border,backgroundColor:'transparent',tension:0.4,borderDash:[4,4],pointRadius:2},
-      {label:'PF worst-case',data:pfW,borderColor:C.rnm.border,backgroundColor:'rgba(110,231,183,0.04)',tension:0.4,pointRadius:2}
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Mono',size:9},color:'#64748b',boxWidth:10}}},scales:{x:{ticks:{font:{family:'DM Mono',size:9}},grid:{color:'rgba(30,30,46,0.8)'}},y:{ticks:{font:{family:'DM Mono',size:9}},grid:{color:'rgba(30,30,46,0.8)'}}}}});
+  const ns  = [2,5,10,20,50,100,500,1000,5000,10000];
+  const emW = ns.map(n => 2*Math.log(n));
+  const pfW = ns.map(n => { let s=0; for(let i=1;i<=n;i++) s+=1/i; return 2*s; });
+  const cs  = document.getElementById('chart-scale');
+  if (cs) {
+    cs.style.maxHeight = '130px';
+    CI['cs'] = new Chart(cs, { type:'line', data:{ labels:ns.map(n=>String(n)), datasets:[
+      { label:'EM worst-case', data:emW, borderColor:C.sm.border,  backgroundColor:'transparent', tension:.4, borderDash:[4,4], pointRadius:2 },
+      { label:'PF worst-case', data:pfW, borderColor:C.rnm.border, backgroundColor:'rgba(110,231,183,.04)', tension:.4, pointRadius:2 }
+    ]}, options: makeOpts(130) });
   }
 }
-
-// ══ INIT ══
-window.addEventListener('load',()=>{
-  document.getElementById('nav-prog').textContent = '1 / '+TOTAL;
-  document.getElementById('nav-name').textContent = SEC_NAMES[0];
-  setNetworkHighlight(0);
-});
 </script>
 </body>
 </html>
