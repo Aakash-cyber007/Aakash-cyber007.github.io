@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy in AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-white font-sans">
+
+<!-- NAVBAR -->
+<nav class="fixed top-0 w-full bg-slate-900/70 backdrop-blur z-50">
+  <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
+    <h1 class="font-bold text-lg">PrivacyAI</h1>
+    <div class="space-x-6 text-sm text-gray-300">
+      <a href="#about" class="hover:text-white">About</a>
+      <a href="#method" class="hover:text-white">Method</a>
+      <a href="#results" class="hover:text-white">Results</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="min-h-screen flex flex-col justify-center items-center text-center relative overflow-hidden">
+
+  <!-- glow -->
+  <div class="absolute w-[500px] h-[500px] bg-cyan-500 opacity-20 blur-3xl rounded-full"></div>
+
+  <h1 class="text-6xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">
+    Privacy in AI
+  </h1>
+
+  <p class="text-gray-400 text-lg max-w-xl">
+    Designing machine learning systems that balance performance and data privacy.
+  </p>
+
+</section>
+
+<!-- ABOUT -->
+<section id="about" class="py-24 px-6 max-w-5xl mx-auto">
+  <h2 class="text-3xl font-semibold mb-6">Why it Matters</h2>
+
+  <p class="text-gray-400 leading-relaxed">
+    Machine learning models can unintentionally leak sensitive information.
+    This project explores how to maintain high predictive performance while
+    ensuring privacy-aware modeling.
+  </p>
+</section>
+
+<!-- METHOD -->
+<section id="method" class="py-24 px-6">
+
+  <h2 class="text-3xl font-semibold text-center mb-12">Approach</h2>
+
+  <div class="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+
+    <div class="bg-slate-800 p-6 rounded-xl hover:scale-105 transition">
+      <h3 class="font-semibold mb-2">Data</h3>
+      <p class="text-gray-400 text-sm">Preprocessing and cleaning</p>
+    </div>
+
+    <div class="bg-slate-800 p-6 rounded-xl hover:scale-105 transition">
+      <h3 class="font-semibold mb-2">Features</h3>
+      <p class="text-gray-400 text-sm">Engineered domain features</p>
+    </div>
+
+    <div class="bg-slate-800 p-6 rounded-xl hover:scale-105 transition">
+      <h3 class="font-semibold mb-2">Model</h3>
+      <p class="text-gray-400 text-sm">XGBoost / RF</p>
+    </div>
+
+    <div class="bg-slate-800 p-6 rounded-xl hover:scale-105 transition">
+      <h3 class="font-semibold mb-2">Evaluation</h3>
+      <p class="text-gray-400 text-sm">R² and validation</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results" class="py-24 text-center">
+
+  <h2 class="text-3xl font-semibold mb-6">Results</h2>
+
+  <p class="text-5xl font-bold text-cyan-400">R² = 0.883</p>
+
+  <p class="text-gray-400 mt-4">
+    Strong performance with signs of overfitting.
+  </p>
+
+</section>
+
+<!-- INSIGHTS -->
+<section class="py-24 px-6">
+
+  <h2 class="text-3xl font-semibold text-center mb-12">Insights</h2>
+
+  <div class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+
+    <div class="bg-slate-800 p-6 rounded-xl">Feature engineering dominates</div>
+    <div class="bg-slate-800 p-6 rounded-xl">Overfitting is critical</div>
+    <div class="bg-slate-800 p-6 rounded-xl">AI tools need validation</div>
+
+  </div>
+
+</section>
+
+<!-- FOOTER -->
+<footer class="text-center py-10 text-gray-500 text-sm">
+  Built with GitHub Pages
+</footer>
+
+</body>
+</html>
