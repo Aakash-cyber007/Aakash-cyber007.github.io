@@ -6,929 +6,871 @@
 <title>RNM-Exponential — A Sharper Sampler for Differentially-Private Decoding</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,500;1,9..144,700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-/* ════════════════════════════════════════════════════════
-   DESIGN TOKENS — "Cambridge Quarto"
-═════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   TOKENS — back to PrivAI palette
+═════════════════════════════════════════════ */
 :root {
-  /* Surfaces */
-  --ink:        #0b0a08;
-  --ink-2:      #100f0c;
-  --paper:      #14130f;
-  --vellum:     #1a1814;
-  --rule:       rgba(214,194,154,.08);
-  --rule-2:     rgba(214,194,154,.16);
-  --rule-3:     rgba(214,194,154,.28);
+  --bg:        #0a0a0f;
+  --surface:   #111118;
+  --card:      #13131d;
+  --card-2:    #161625;
+  --border:    #1e1e2e;
+  --border-2:  #2a2a3e;
 
-  /* Type */
-  --bone:       #f0e8d4;
-  --bone-2:     #d6c89a;
-  --quill:      #8a8170;
-  --whisper:    #5a5446;
+  --text:      #e2e8f0;
+  --soft:      #94a3b8;
+  --muted:     #64748b;
+  --whisper:   #475569;
 
-  /* Accents — restrained, journal-grade */
-  --gold:       #d4af6a;       /* primary luminous accent */
-  --gold-soft:  #e8c98a;
-  --gold-glow:  rgba(212,175,106,.18);
-  --emerald:    #6b9a7a;       /* math / theory */
-  --oxblood:    #b85d52;       /* problems / softmax */
-  --indigo:     #7a8fb8;       /* secondary */
+  --green:     #6ee7b7;
+  --green-2:   rgba(110,231,183,.06);
+  --green-3:   rgba(110,231,183,.18);
+  --green-4:   rgba(110,231,183,.30);
 
-  /* Typography stacks */
-  --serif:    'Fraunces', 'Cormorant Garamond', Georgia, serif;
-  --mono:     'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
-  --sans:     'Inter Tight', system-ui, sans-serif;
+  --indigo:    #818cf8;
+  --indigo-2:  rgba(129,140,248,.06);
+  --indigo-3:  rgba(129,140,248,.30);
+
+  --orange:    #fb923c;
+  --orange-2:  rgba(251,146,60,.06);
+  --orange-3:  rgba(251,146,60,.30);
+
+  --red:       #f87171;
+  --red-2:     rgba(248,113,113,.06);
+  --red-3:     rgba(248,113,113,.30);
+
+  --fh: 'Syne', sans-serif;
+  --fm: 'DM Mono', monospace;
 }
 
-/* ════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════
    RESET
-═════════════════════════════════════════════════════════ */
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-html, body { height:100%; overflow:hidden; }
+═════════════════════════════════════════════ */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
 body {
-  font-family: var(--mono);
-  background: var(--ink);
-  color: var(--bone);
+  font-family: var(--fm);
+  background: var(--bg);
+  color: var(--text);
   font-size: 14px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  cursor: default;
 }
 
-/* ════════════════════════════════════════════════════════
-   ATMOSPHERE — paper grain + warm vignette + radial glow
-═════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   ATMOSPHERE — grid + radial glows
+═════════════════════════════════════════════ */
 body::before {
-  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 0%, rgba(212,175,106,.05) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 50% at 80% 100%, rgba(122,143,184,.04) 0%, transparent 60%),
-    radial-gradient(circle at 50% 50%, transparent 30%, rgba(0,0,0,.4) 100%);
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(110,231,183,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110,231,183,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 body::after {
-  content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.4;
-  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.83 0 0 0 0 0.76 0 0 0 0 0.6 0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  mix-blend-mode: overlay;
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 10%, rgba(110,231,183,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 85%, rgba(129,140,248,.05) 0%, transparent 65%);
 }
 
-/* ════════════════════════════════════════════════════════
-   MASTHEAD — fine top rule
-═════════════════════════════════════════════════════════ */
-.masthead {
-  position: fixed; top:0; left:0; right:0; z-index:200;
-  height: 56px;
+/* ════════════════════════════════════════════
+   TOPBAR
+═════════════════════════════════════════════ */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 52px;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 48px;
-  background: rgba(11,10,8,.78);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  border-bottom: 1px solid var(--rule);
+  padding: 0 40px;
+  background: rgba(10,10,15,.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
 }
-.masthead::before {
-  content:''; position:absolute; left:0; bottom:-1px; height:1px;
-  width:var(--prog,0%); background: var(--gold);
-  transition: width .6s cubic-bezier(.16,1,.3,1);
-  box-shadow: 0 0 12px var(--gold-glow);
+.topbar::before {
+  content: ''; position: absolute; left: 0; bottom: -1px; height: 1px;
+  width: var(--prog, 0%); background: var(--green);
+  transition: width .55s cubic-bezier(.16,1,.3,1);
+  box-shadow: 0 0 8px var(--green-3);
 }
-.brand {
-  font-family: var(--serif); font-style: italic; font-weight: 500;
-  font-size: 16px; letter-spacing: -.01em; color: var(--bone);
+.tb-brand {
+  font-family: var(--fh); font-size: 13px; font-weight: 700;
+  color: var(--green); letter-spacing: .04em;
 }
-.brand b {
-  font-style: normal; font-weight: 700; color: var(--gold);
-  letter-spacing: .02em;
-}
-.brand-rule {
+.tb-brand-sep {
   display: inline-block; width: 18px; height: 1px;
-  background: var(--rule-3); margin: 0 12px; vertical-align: middle;
+  background: var(--border-2); margin: 0 12px; vertical-align: middle;
 }
-.masthead-meta {
-  display: flex; align-items: center; gap: 28px;
-  font-family: var(--mono); font-size: 10.5px;
-  color: var(--quill); letter-spacing: .12em; text-transform: uppercase;
+.tb-brand i {
+  font-style: italic; font-weight: 400; color: var(--soft); font-size: 12px;
 }
-.live-dot { display:flex; align-items:center; gap:8px; color: var(--gold); }
-.live-dot::before {
-  content:''; width:5px; height:5px; border-radius:50%;
-  background: var(--gold); box-shadow: 0 0 8px var(--gold);
-  animation: pulse 2.4s ease-in-out infinite;
+.tb-meta {
+  display: flex; align-items: center; gap: 24px;
+  font-size: 11px; color: var(--muted); letter-spacing: .08em;
+}
+.tb-dot {
+  display: flex; align-items: center; gap: 6px; color: var(--green);
+}
+.tb-dot::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 6px var(--green-3);
+  animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%     { opacity:.35; transform:scale(.85); }
+  0%,100% { opacity: 1; }
+  50%     { opacity: .35; }
 }
 
-/* ════════════════════════════════════════════════════════
-   SIDE RAIL — section navigator
-═════════════════════════════════════════════════════════ */
-.rail {
-  position: fixed; right: 22px; top: 50%; transform: translateY(-50%);
-  z-index: 150;
-  display: flex; flex-direction: column; gap: 2px;
-}
-.rail-item {
-  display: flex; align-items: center; gap: 14px;
-  cursor: pointer; padding: 8px 0;
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--whisper); transition: color .3s;
-  justify-content: flex-end;
-}
-.rail-item .rail-name {
-  opacity: 0; transform: translateX(8px);
-  transition: opacity .35s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1);
-  text-align: right; min-width: 0;
-}
-.rail-item .rail-num {
-  font-family: var(--serif); font-style: italic; font-weight: 500;
-  font-size: 12px; letter-spacing: 0; min-width: 22px; text-align: right;
-}
-.rail-item .rail-tick {
-  width: 24px; height: 1px; background: var(--rule-2);
-  transition: width .35s cubic-bezier(.16,1,.3,1), background .3s;
-}
-.rail-item:hover { color: var(--bone-2); }
-.rail-item:hover .rail-name { opacity: 1; transform: translateX(0); }
-.rail-item:hover .rail-tick { width: 32px; background: var(--bone-2); }
-.rail-item.active { color: var(--gold); }
-.rail-item.active .rail-name { opacity: 1; transform: translateX(0); }
-.rail-item.active .rail-tick {
-  width: 40px; background: var(--gold);
-  box-shadow: 0 0 8px var(--gold-glow);
-}
-
-/* ════════════════════════════════════════════════════════
-   STAGE — sections
-═════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   STAGE
+═════════════════════════════════════════════ */
 .stage {
-  position: fixed; top: 56px; left: 0; right: 0; bottom: 64px;
+  position: fixed; top: 52px; left: 0; right: 0; bottom: 64px;
   overflow: hidden;
-  perspective: 1600px;
 }
 .scene {
   position: absolute; inset: 0;
   overflow-y: auto; overflow-x: hidden;
   z-index: 1;
   visibility: hidden; opacity: 0;
-  transform: translateY(24px);
-  transition: opacity .55s cubic-bezier(.22,1,.36,1),
-              transform .65s cubic-bezier(.22,1,.36,1),
-              visibility 0s linear .65s;
+  transform: translateY(18px);
+  transition: opacity .5s cubic-bezier(.22,1,.36,1),
+              transform .55s cubic-bezier(.22,1,.36,1),
+              visibility 0s linear .55s;
 }
-.scene.entering {
-  visibility: visible;
-  transition: opacity .65s cubic-bezier(.22,1,.36,1),
-              transform .75s cubic-bezier(.22,1,.36,1),
-              visibility 0s linear 0s;
-}
+.scene.entering { visibility: visible; transition: visibility 0s linear 0s; }
 .scene.active {
   visibility: visible; opacity: 1; transform: translateY(0);
-  transition: opacity .65s cubic-bezier(.22,1,.36,1),
-              transform .75s cubic-bezier(.22,1,.36,1),
+  transition: opacity .55s cubic-bezier(.22,1,.36,1),
+              transform .65s cubic-bezier(.22,1,.36,1),
               visibility 0s linear 0s;
 }
 .scene.leaving {
-  opacity: 0; transform: translateY(-16px);
-  transition: opacity .35s cubic-bezier(.4,0,1,1),
-              transform .4s cubic-bezier(.4,0,1,1),
-              visibility 0s linear .4s;
+  opacity: 0; transform: translateY(-12px);
+  transition: opacity .3s cubic-bezier(.4,0,1,1),
+              transform .35s cubic-bezier(.4,0,1,1),
+              visibility 0s linear .35s;
 }
 
-/* Staggered children reveal */
+/* Staggered reveal of children */
 .scene.active .reveal {
-  animation: revealUp .8s cubic-bezier(.22,1,.36,1) backwards;
+  animation: revealUp .7s cubic-bezier(.22,1,.36,1) backwards;
 }
-.scene.active .reveal:nth-child(1) { animation-delay: .12s; }
-.scene.active .reveal:nth-child(2) { animation-delay: .22s; }
-.scene.active .reveal:nth-child(3) { animation-delay: .32s; }
-.scene.active .reveal:nth-child(4) { animation-delay: .42s; }
-.scene.active .reveal:nth-child(5) { animation-delay: .52s; }
-.scene.active .reveal:nth-child(6) { animation-delay: .62s; }
+.scene.active .reveal:nth-child(1) { animation-delay: .08s; }
+.scene.active .reveal:nth-child(2) { animation-delay: .18s; }
+.scene.active .reveal:nth-child(3) { animation-delay: .28s; }
+.scene.active .reveal:nth-child(4) { animation-delay: .38s; }
+.scene.active .reveal:nth-child(5) { animation-delay: .48s; }
+.scene.active .reveal:nth-child(6) { animation-delay: .58s; }
 @keyframes revealUp {
-  from { opacity: 0; transform: translateY(28px); }
+  from { opacity: 0; transform: translateY(22px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Curtain wipe overlay */
-.curtain {
-  position: fixed; top: 56px; left: 0; right: 0; bottom: 64px;
-  z-index: 50; pointer-events: none;
-  transform-origin: top;
-  transform: scaleY(0);
-  background: linear-gradient(180deg, var(--ink) 0%, var(--paper) 100%);
-}
-.curtain.wipe {
-  animation: curtainWipe .85s cubic-bezier(.76,0,.24,1);
-}
-@keyframes curtainWipe {
-  0%   { transform: scaleY(0); transform-origin: top; }
-  49%  { transform: scaleY(1); transform-origin: top; }
-  50%  { transform: scaleY(1); transform-origin: bottom; }
-  100% { transform: scaleY(0); transform-origin: bottom; }
-}
-
-/* ════════════════════════════════════════════════════════
-   FOOT RAIL — prev/next + reading time
-═════════════════════════════════════════════════════════ */
-.foot {
+/* ════════════════════════════════════════════
+   BOTTOM NAV — centered prev/next
+═════════════════════════════════════════════ */
+.nav-bar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
   height: 64px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 48px;
-  background: rgba(11,10,8,.82);
-  backdrop-filter: blur(20px) saturate(1.2);
-  border-top: 1px solid var(--rule);
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,10,15,.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
 }
-.foot-section {
-  font-family: var(--serif); font-style: italic; font-weight: 500;
-  font-size: 14px; color: var(--bone-2);
-  display: flex; align-items: baseline; gap: 14px;
+.nav-bar .nav-inner {
+  display: flex; align-items: center; gap: 14px;
 }
-.foot-section .fs-num {
-  font-family: var(--mono); font-style: normal;
-  font-size: 10px; letter-spacing: .2em;
-  color: var(--gold); text-transform: uppercase;
-}
-.foot-controls {
-  display: flex; align-items: center; gap: 18px;
-}
-.foot-btn {
-  display: flex; align-items: center; gap: 10px;
-  height: 36px; padding: 0 18px;
-  font-family: var(--mono); font-size: 10.5px;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--quill);
+.nav-btn {
+  height: 38px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 0 20px;
   background: transparent;
-  border: 1px solid var(--rule-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--fm); font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all .25s cubic-bezier(.22,1,.36,1);
+  transition: all .22s cubic-bezier(.22,1,.36,1);
+  border-radius: 2px;
 }
-.foot-btn:hover:not(:disabled) {
-  color: var(--gold); border-color: var(--gold);
-  background: var(--gold-glow);
-  letter-spacing: .18em;
+.nav-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.nav-btn:hover:not(:disabled) {
+  border-color: var(--green); color: var(--green);
+  background: var(--green-2);
+  letter-spacing: .15em;
 }
-.foot-btn:disabled { opacity: .25; cursor: not-allowed; }
-.foot-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
-.foot-counter {
-  font-family: var(--serif); font-style: italic;
-  font-size: 14px; color: var(--bone);
-  display: flex; align-items: baseline; gap: 8px;
-  min-width: 70px; justify-content: center;
+.nav-btn:disabled { opacity: .25; cursor: not-allowed; }
+.nav-btn.home {
+  width: 38px; padding: 0; justify-content: center;
 }
-.foot-counter b { font-style: normal; font-weight: 700; color: var(--gold); font-size: 18px; }
-.foot-counter span { color: var(--whisper); }
+.nav-btn.home:hover:not(:disabled) {
+  border-color: var(--indigo); color: var(--indigo);
+  background: var(--indigo-2);
+  letter-spacing: 0;
+}
 
-/* ════════════════════════════════════════════════════════
+.nav-section {
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 18px; height: 38px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  min-width: 280px; justify-content: center;
+}
+.nav-section .ns-num {
+  font-family: var(--fh); font-size: 12px; font-weight: 700;
+  color: var(--green); letter-spacing: .1em;
+}
+.nav-section .ns-name {
+  font-size: 11px; color: var(--text);
+  letter-spacing: .04em;
+}
+.nav-section .ns-counter {
+  font-family: var(--fm); font-size: 10.5px;
+  color: var(--muted); letter-spacing: .08em;
+  padding-left: 14px; border-left: 1px solid var(--border);
+}
+.nav-section .ns-counter b {
+  color: var(--green); font-weight: 500;
+}
+
+.nav-progress-mini {
+  display: flex; gap: 4px; padding: 0 6px;
+}
+.nav-pip {
+  width: 22px; height: 2px; background: var(--border);
+  cursor: pointer; transition: background .25s;
+  border-radius: 1px;
+}
+.nav-pip:hover { background: var(--soft); }
+.nav-pip.active {
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green-3);
+}
+
+/* ════════════════════════════════════════════
    PAGE LAYOUT
-═════════════════════════════════════════════════════════ */
+═════════════════════════════════════════════ */
 .page {
-  max-width: 1180px; margin: 0 auto; padding: 0 56px 64px;
+  max-width: 1100px; margin: 0 auto; padding: 0 48px 56px;
   position: relative;
 }
 
-/* Section header — editorial */
 .head {
-  padding: 56px 0 36px;
-  display: grid; grid-template-columns: 1fr auto; align-items: end;
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: 44px;
-  gap: 24px;
+  padding: 38px 0 28px;
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 24px; align-items: end;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
 }
-.head-left { display: flex; flex-direction: column; gap: 14px; }
 .head-meta {
   display: flex; align-items: center; gap: 14px;
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: .22em; text-transform: uppercase;
-  color: var(--quill);
+  font-family: var(--fm); font-size: 10px;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 14px;
 }
 .head-meta .chap-num {
-  font-family: var(--serif); font-style: italic; font-weight: 700;
-  font-size: 18px; color: var(--gold); letter-spacing: -.02em;
+  font-family: var(--fh); font-size: 16px; font-weight: 700;
+  letter-spacing: .04em; color: var(--green);
 }
 .head-meta .chap-rule {
-  flex-grow: 0; width: 28px; height: 1px; background: var(--gold);
+  width: 28px; height: 1px; background: var(--green);
+  box-shadow: 0 0 6px var(--green-3);
 }
 .head h1 {
-  font-family: var(--serif);
-  font-size: clamp(36px, 5vw, 60px);
-  font-weight: 500; line-height: 1.02;
-  letter-spacing: -.025em;
-  color: var(--bone);
+  font-family: var(--fh);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800; line-height: 1.05;
+  letter-spacing: -.025em; color: #fff;
 }
 .head h1 em {
-  font-style: italic; font-weight: 700; color: var(--gold);
+  font-style: italic; font-weight: 600; color: var(--green);
 }
-.head h1 .ampersand {
-  font-style: italic; font-weight: 300; color: var(--bone-2);
-  font-size: 1.15em;
+.head h1 .amp {
+  font-style: italic; font-weight: 400; color: var(--soft);
 }
 .head-right {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: .22em; text-transform: uppercase;
-  color: var(--whisper); text-align: right;
-  padding-bottom: 6px;
+  font-family: var(--fm); font-size: 10px;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--muted); text-align: right;
+  padding-bottom: 4px; line-height: 1.7;
 }
 
-/* ════════════════════════════════════════════════════════
-   TYPOGRAPHIC PRIMITIVES
-═════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   PRIMITIVES
+═════════════════════════════════════════════ */
 .eyebrow {
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .22em; text-transform: uppercase;
-  color: var(--quill); margin-bottom: 10px;
+  font-family: var(--fm); font-size: 10px;
+  letter-spacing: .15em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
   display: flex; align-items: center; gap: 10px;
 }
 .eyebrow::before {
-  content:''; width: 18px; height: 1px; background: var(--gold);
+  content: ''; width: 18px; height: 1px; background: var(--green);
 }
 
 .tag {
-  display: inline-block;
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .14em; text-transform: uppercase;
-  padding: 4px 10px; border: 1px solid;
+  display: inline-block; font-family: var(--fm);
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  padding: 3px 10px; border: 1px solid;
 }
-.tag-gold { color: var(--gold); border-color: rgba(212,175,106,.35); background: rgba(212,175,106,.05); }
-.tag-em   { color: var(--emerald); border-color: rgba(107,154,122,.35); background: rgba(107,154,122,.05); }
-.tag-ox   { color: var(--oxblood); border-color: rgba(184,93,82,.35); background: rgba(184,93,82,.05); }
-.tag-in   { color: var(--indigo); border-color: rgba(122,143,184,.35); background: rgba(122,143,184,.05); }
-.tag-mute { color: var(--quill); border-color: var(--rule-2); }
+.tag-g { color: var(--green);  border-color: var(--green-3);  background: var(--green-2); }
+.tag-i { color: var(--indigo); border-color: var(--indigo-3); background: var(--indigo-2); }
+.tag-o { color: var(--orange); border-color: var(--orange-3); background: var(--orange-2); }
+.tag-r { color: var(--red);    border-color: var(--red-3);    background: var(--red-2); }
+.tag-m { color: var(--muted);  border-color: var(--border);   background: transparent; }
 
 .formula {
-  font-family: var(--serif); font-style: italic;
-  font-size: 15px; color: var(--bone);
-  padding: 14px 18px; margin: 14px 0;
-  border-left: 1px solid var(--gold);
-  background: linear-gradient(90deg, var(--gold-glow), transparent 80%);
-  letter-spacing: -.005em; line-height: 1.6;
+  background: var(--green-2);
+  border: 1px solid rgba(110,231,183,.15);
+  border-left: 2px solid var(--green);
+  padding: 11px 14px; font-size: 12px;
+  color: var(--green); margin: 14px 0;
+  letter-spacing: .04em; font-family: var(--fm);
+  line-height: 1.7;
 }
-.formula b { font-style: normal; font-weight: 700; color: var(--gold); font-family: var(--mono); font-size: 12px; }
-
-.drop-cap::first-letter {
-  font-family: var(--serif); font-style: italic; font-weight: 700;
-  font-size: 3.4em; line-height: .85; float: left;
-  margin: .08em .12em 0 0; color: var(--gold);
+.formula b {
+  color: var(--green); font-weight: 700;
+  background: rgba(110,231,183,.08);
+  padding: 1px 6px;
 }
 
-/* ════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════
    GRIDS
-═════════════════════════════════════════════════════════ */
-.g-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); }
-.g-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--rule); }
-.g-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--rule); }
-.g-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 1px; background: var(--rule); }
+═════════════════════════════════════════════ */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); }
+.g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
+.g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); }
 
-/* ════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════
    CARDS
-═════════════════════════════════════════════════════════ */
+═════════════════════════════════════════════ */
 .card {
-  background: var(--paper);
-  padding: 28px;
+  background: var(--card);
+  padding: 24px;
   position: relative;
   overflow: hidden;
+  transition: background .25s;
 }
 .card-hl::before {
-  content:''; position: absolute; top:0; left:0; right:0; height:1px;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
 }
-.card-hl-gold::before { background: var(--gold); box-shadow: 0 0 12px var(--gold-glow); }
-.card-hl-em::before   { background: var(--emerald); }
-.card-hl-ox::before   { background: var(--oxblood); }
-.card-hl-in::before   { background: var(--indigo); }
+.card-hl-g::before { background: var(--green); }
+.card-hl-i::before { background: var(--indigo); }
+.card-hl-o::before { background: var(--orange); }
+.card-hl-r::before { background: var(--red); }
 
 .card-vl::after {
-  content:''; position: absolute; top: 28px; bottom: 28px; left: 0; width: 1px;
-  background: var(--gold);
+  content: ''; position: absolute; top: 24px; bottom: 24px; left: 0; width: 2px;
+  background: var(--green);
 }
 
-.card-numeral {
-  position: absolute; top: 18px; right: 22px;
-  font-family: var(--serif); font-style: italic; font-weight: 700;
-  font-size: 56px; line-height: 1; letter-spacing: -.04em;
-  color: rgba(214,194,154,.06);
+.card-num {
+  position: absolute; top: 14px; right: 16px;
+  font-family: var(--fh); font-size: 32px; font-weight: 800;
+  color: rgba(255,255,255,.04);
   pointer-events: none; user-select: none;
 }
 
 .card h3 {
-  font-family: var(--serif); font-weight: 500;
-  font-size: 22px; line-height: 1.2; letter-spacing: -.01em;
-  color: var(--bone); margin-bottom: 12px;
+  font-family: var(--fh); font-weight: 700;
+  font-size: 17px; line-height: 1.3;
+  color: #fff; margin-bottom: 9px;
 }
-.card h3 em { font-style: italic; color: var(--gold); }
+.card h3 em {
+  font-style: italic; font-weight: 600; color: var(--green);
+}
 .card p {
-  font-size: 12.5px; color: var(--bone-2); line-height: 1.75;
-  font-family: var(--mono); font-weight: 300;
+  font-size: 12px; color: var(--soft); line-height: 1.75;
 }
-.card p strong { color: var(--bone); font-weight: 500; }
-.card p em { color: var(--gold); font-style: italic; font-family: var(--serif); font-size: 1.05em; }
+.card p strong { color: var(--text); font-weight: 500; }
+.card p em { color: var(--green); font-style: italic; }
 
-/* ════════════════════════════════════════════════════════
-   §0 — HERO
-═════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   §0 HERO
+═════════════════════════════════════════════ */
 .hero {
-  display: grid; grid-template-columns: 1.15fr .85fr;
-  gap: 56px; align-items: center;
-  padding: 32px 0;
+  display: grid; grid-template-columns: 1.05fr .95fr;
+  gap: 36px; align-items: center;
+  padding: 28px 0 24px;
 }
-.hero-left { display: flex; flex-direction: column; gap: 28px; }
-.hero-folio {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: .26em; text-transform: uppercase;
-  color: var(--quill);
-  display: flex; align-items: center; gap: 16px;
-}
-.hero-folio .ff-rule {
-  flex: 1; height: 1px; background: var(--rule-2); max-width: 80px;
-}
-.hero-folio b { color: var(--gold); font-weight: 400; }
+.hero-left { display: flex; flex-direction: column; gap: 22px; }
 
-.hero-title {
-  font-family: var(--serif); font-weight: 300;
-  font-size: clamp(56px, 7.5vw, 110px);
-  line-height: .92; letter-spacing: -.045em;
-  color: var(--bone);
+.hero-folio {
+  font-family: var(--fm); font-size: 10px;
+  letter-spacing: .22em; text-transform: uppercase;
+  color: var(--muted);
+  display: flex; align-items: center; gap: 14px;
 }
-.hero-title .word-1 { display: block; }
-.hero-title .word-2 {
-  display: block; font-style: italic; font-weight: 300;
-  color: var(--bone-2); padding-left: .8em;
+.hero-folio b { color: var(--green); font-weight: 400; }
+.hero-folio .ff-rule { flex-grow: 0; width: 60px; height: 1px; background: var(--border-2); }
+
+.hero-h1 {
+  font-family: var(--fh);
+  font-size: clamp(40px, 5.4vw, 70px);
+  font-weight: 800; line-height: .95;
+  letter-spacing: -.03em; color: #fff;
 }
-.hero-title .word-3 {
-  display: block; font-style: italic; font-weight: 700;
-  color: var(--gold); padding-left: 1.6em;
-  position: relative;
+.hero-h1 .h-soft {
+  color: var(--soft); font-weight: 400; font-style: italic;
 }
-.hero-title .word-3::before {
-  content:''; position: absolute; bottom: .12em; left: -1.2em;
-  width: 2.2em; height: 1px; background: var(--gold);
-  box-shadow: 0 0 8px var(--gold-glow);
+.hero-h1 .h-glow {
+  color: var(--green);
+  text-shadow: 0 0 28px rgba(110,231,183,.18);
 }
 
 .hero-lede {
-  font-family: var(--serif); font-weight: 300;
-  font-size: 17px; line-height: 1.55;
-  color: var(--bone-2); max-width: 480px; letter-spacing: -.005em;
+  font-size: 13px; color: var(--soft);
+  line-height: 1.8; max-width: 440px;
 }
-.hero-lede strong { color: var(--bone); font-weight: 500; }
-.hero-lede em { color: var(--gold); font-style: italic; }
+.hero-lede strong { color: var(--text); font-weight: 500; }
+.hero-lede em { color: var(--green); font-style: italic; }
 
-.hero-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.hero-chips { display: flex; flex-wrap: wrap; gap: 7px; }
 
 .hero-meta {
-  display: grid; grid-template-columns: repeat(3,1fr);
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--border); background: var(--surface);
 }
 .hero-meta-cell {
-  padding: 16px 20px;
-  border-right: 1px solid var(--rule);
+  padding: 14px 16px;
+  border-right: 1px solid var(--border);
 }
 .hero-meta-cell:last-child { border-right: none; }
 .hero-meta-cell .l {
-  font-family: var(--mono); font-size: 9px;
-  letter-spacing: .22em; text-transform: uppercase;
-  color: var(--whisper); margin-bottom: 6px;
+  font-size: 9px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
 }
 .hero-meta-cell .v {
-  font-family: var(--serif); font-style: italic; font-weight: 500;
-  font-size: 16px; color: var(--bone); letter-spacing: -.01em;
+  font-family: var(--fh); font-size: 12px; font-weight: 700;
+  color: var(--text);
 }
 
-/* Code frame — refined */
+/* Code frame */
 .codex {
-  background: var(--ink-2);
-  border: 1px solid var(--rule-2);
-  position: relative;
-  overflow: hidden;
+  background: #080b12;
+  border: 1px solid var(--border);
+  overflow: hidden; position: relative;
 }
 .codex::before {
-  content:''; position: absolute; top:0; left:0; right:0; height:1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  animation: scan 3.2s ease-in-out infinite;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  animation: scan 3s ease-in-out infinite;
 }
 @keyframes scan {
-  0%,100% { opacity: .3; transform: translateX(-100%); }
+  0%,100% { opacity: .25; transform: translateX(-100%); }
   50%     { opacity: 1; transform: translateX(100%); }
 }
 .codex-bar {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 18px;
-  background: var(--paper);
-  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
+.cdot { width: 9px; height: 9px; border-radius: 50%; }
+.cdot.r { background: var(--red); }
+.cdot.y { background: var(--orange); }
+.cdot.g { background: var(--green); }
 .codex-bar .filename {
-  font-family: var(--mono); font-size: 11px;
-  color: var(--quill); letter-spacing: .04em;
+  font-family: var(--fm); font-size: 10.5px;
+  color: var(--muted); margin-left: 6px; letter-spacing: .04em;
 }
-.codex-bar .filename b { color: var(--bone-2); font-weight: 400; }
+.codex-bar .filename b { color: var(--text); font-weight: 400; }
 .codex-bar .lang {
-  margin-left: auto;
-  font-family: var(--mono); font-size: 9px;
-  letter-spacing: .2em; text-transform: uppercase;
-  color: var(--gold);
+  margin-left: auto; font-size: 9.5px; letter-spacing: .18em;
+  color: var(--green); text-transform: uppercase;
 }
 .codex-body {
-  padding: 22px 24px;
-  font-family: var(--mono); font-size: 12px;
-  line-height: 1.95;
+  padding: 16px 18px; font-size: 12px; line-height: 1.95;
 }
-.cm-cm { color: var(--whisper); font-style: italic; }
-.cm-kw { color: var(--indigo); }
-.cm-fn { color: var(--gold); }
-.cm-st { color: var(--emerald); }
-.cm-nm { color: var(--bone); }
-.cm-op { color: var(--bone-2); }
+.cm { color: #2d4060; font-style: italic; }
+.kw { color: var(--indigo); }
+.fn { color: var(--green); }
+.st { color: var(--orange); }
+.nm { color: var(--text); }
 
-/* Hero stats footer */
+/* Stats row */
 .stats {
   display: grid; grid-template-columns: repeat(5, 1fr);
-  border-top: 1px solid var(--rule);
+  border: 1px solid var(--border); background: var(--surface);
+  margin-top: 1px;
 }
 .stats-cell {
-  padding: 24px 20px;
-  border-right: 1px solid var(--rule);
-  position: relative;
-  transition: background .3s;
+  padding: 18px 16px; border-right: 1px solid var(--border);
+  transition: background .22s;
 }
 .stats-cell:last-child { border-right: none; }
-.stats-cell:hover { background: rgba(212,175,106,.03); }
+.stats-cell:hover { background: var(--green-2); }
 .stats-cell .num {
-  font-family: var(--serif); font-weight: 500;
-  font-size: clamp(34px, 4vw, 52px); line-height: .9;
-  letter-spacing: -.04em; color: var(--bone);
-  display: flex; align-items: baseline; gap: 6px;
+  font-family: var(--fh);
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 800; letter-spacing: -.03em;
+  color: #fff; line-height: 1;
+  display: flex; align-items: baseline; gap: 5px;
 }
-.stats-cell .num em {
-  font-style: italic; font-weight: 700; color: var(--gold);
-}
-.stats-cell .num .unit {
-  font-family: var(--mono); font-size: .3em; font-style: normal;
-  letter-spacing: .15em; text-transform: uppercase;
-  color: var(--quill); font-weight: 400;
+.stats-cell .num em { color: var(--green); font-style: italic; }
+.stats-cell .num .u {
+  font-size: .35em; color: var(--muted); font-weight: 400;
+  font-style: normal; font-family: var(--fm);
+  letter-spacing: .12em; text-transform: uppercase;
 }
 .stats-cell .lbl {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--quill); margin-top: 8px;
+  font-size: 10px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); margin-top: 6px;
 }
 
-/* ════════════════════════════════════════════════════════
-   §1 — PROBLEM CARDS
-═════════════════════════════════════════════════════════ */
-.problem-grid .card { padding: 32px 28px; min-height: 260px; }
-.problem-grid .eyebrow { margin-bottom: 16px; }
-
-/* ════════════════════════════════════════════════════════
-   §2 — SOLUTION
-═════════════════════════════════════════════════════════ */
-.solution-card { padding: 36px; min-height: 460px; }
-.solution-card h3 { font-size: 28px; margin-bottom: 14px; }
-.solution-card p { font-size: 13px; margin-bottom: 14px; }
-
-/* ════════════════════════════════════════════════════════
-   §3 — INTUITION + COIN-FLIP SIM (rebuilt)
-═════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   §3 INTUITION + COIN-FLIP LAB
+═════════════════════════════════════════════ */
 .intuition-bar {
-  display: flex; align-items: stretch; gap: 1px;
-  background: var(--rule); border: 1px solid var(--rule);
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
   margin-bottom: 24px;
 }
 .intuition-bar .lede {
-  flex: 1; padding: 18px 24px;
-  background: var(--paper);
-  font-family: var(--serif); font-style: italic; font-weight: 300;
-  font-size: 15px; color: var(--bone-2);
+  background: var(--card); padding: 16px 20px;
+  font-size: 12.5px; color: var(--soft);
   display: flex; align-items: center;
+  line-height: 1.7;
 }
-.intuition-bar .lede b { font-style: normal; font-weight: 700; color: var(--gold); }
+.intuition-bar .lede b {
+  color: var(--green); font-weight: 700;
+}
 .intuition-bar .controls {
+  background: var(--card);
   display: flex; align-items: center; gap: 8px;
   padding: 12px 18px;
-  background: var(--paper);
 }
-
 .run-btn {
-  display: flex; align-items: center; gap: 10px;
-  height: 36px; padding: 0 20px;
-  font-family: var(--mono); font-size: 10.5px;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: var(--ink); background: var(--gold);
+  display: flex; align-items: center; gap: 9px;
+  height: 34px; padding: 0 16px;
+  background: var(--green); color: #000;
   border: none; cursor: pointer;
-  transition: all .25s cubic-bezier(.22,1,.36,1);
+  font-family: var(--fm); font-size: 10.5px;
+  letter-spacing: .12em; text-transform: uppercase;
+  font-weight: 500;
+  transition: all .2s;
 }
 .run-btn:hover:not(:disabled) {
-  background: var(--gold-soft); letter-spacing: .2em;
-  box-shadow: 0 0 24px var(--gold-glow);
+  background: #88f0c5;
+  box-shadow: 0 0 16px var(--green-3);
 }
-.run-btn:disabled { opacity: .35; cursor: not-allowed; background: var(--quill); }
+.run-btn:disabled {
+  opacity: .4; cursor: not-allowed;
+  background: var(--muted); color: var(--text);
+}
 .run-btn svg { width: 11px; height: 11px; }
 
 .reset-btn {
-  height: 36px; padding: 0 16px;
-  font-family: var(--mono); font-size: 10.5px;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--quill); background: transparent;
-  border: 1px solid var(--rule-2); cursor: pointer;
-  transition: all .25s;
+  height: 34px; padding: 0 14px;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border-2);
+  font-family: var(--fm); font-size: 10.5px;
+  letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: all .2s;
 }
-.reset-btn:hover { color: var(--bone-2); border-color: var(--bone-2); }
+.reset-btn:hover {
+  color: var(--text); border-color: var(--soft);
+}
 
+/* Lab container */
 .lab {
-  border: 1px solid var(--rule);
-  background: var(--paper);
+  border: 1px solid var(--border);
+  background: var(--card);
 }
 .lab-head {
-  padding: 22px 32px;
-  border-bottom: 1px solid var(--rule);
-  text-align: center;
-  background: linear-gradient(180deg, var(--vellum), var(--paper));
+  padding: 16px 24px; text-align: center;
+  background: var(--green-2);
+  border-bottom: 1px solid var(--border);
 }
-.lab-head .eyebrow { justify-content: center; margin-bottom: 8px; }
+.lab-head .lh-eyebrow {
+  font-size: 10px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--green);
+  margin-bottom: 5px;
+}
 .lab-head h3 {
-  font-family: var(--serif); font-weight: 500;
-  font-size: 26px; letter-spacing: -.015em; color: var(--bone);
+  font-family: var(--fh); font-size: 19px;
+  font-weight: 700; color: #fff;
 }
-.lab-head h3 em { font-style: italic; font-weight: 700; color: var(--gold); }
+.lab-head h3 em {
+  font-style: italic; font-weight: 600; color: var(--green);
+}
 
 .lab-stage {
   display: grid; grid-template-columns: 1fr 56px 1fr;
-  min-height: 540px;
 }
-.lab-side { padding: 26px 30px; }
+.lab-side { padding: 24px 28px; }
 .lab-divider {
-  border-left: 1px solid var(--rule);
-  border-right: 1px solid var(--rule);
-  background: var(--vellum);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: rgba(255,255,255,.01);
   display: flex; align-items: center; justify-content: center;
   position: relative;
 }
-.lab-divider .vs {
-  font-family: var(--serif); font-style: italic; font-weight: 300;
-  font-size: 22px; color: var(--quill);
-  letter-spacing: -.02em;
+.lab-divider span {
+  font-family: var(--fh); font-style: italic;
+  font-size: 18px; color: var(--muted); font-weight: 400;
 }
-.lab-divider::before, .lab-divider::after {
-  content:''; position: absolute; left: 50%; transform: translateX(-50%);
-  width: 1px; height: 80px; background: linear-gradient(180deg, var(--rule), transparent);
-}
-.lab-divider::before { top: 0; }
-.lab-divider::after { bottom: 0; transform: translateX(-50%) rotate(180deg); }
 
 .lab-title {
-  font-family: var(--mono); font-size: 11px;
-  letter-spacing: .14em; text-transform: uppercase;
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  padding-bottom: 14px; margin-bottom: 18px;
-  border-bottom: 1px solid var(--rule);
+  font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase;
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 12px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
-.lab-title.ox { color: var(--oxblood); }
-.lab-title.em { color: var(--emerald); }
-.lab-title b { color: var(--bone); font-weight: 500; }
+.lab-title.r { color: var(--red); }
+.lab-title.g { color: var(--green); }
+.lab-title b { color: var(--text); font-weight: 500; }
 .lab-title .pill {
-  font-size: 8.5px; padding: 3px 8px; letter-spacing: .12em;
-  border: 1px solid;
+  font-size: 9px; padding: 3px 8px;
+  letter-spacing: .1em; border: 1px solid;
 }
-.lab-title.ox .pill { color: var(--oxblood); border-color: rgba(184,93,82,.35); background: rgba(184,93,82,.06); }
-.lab-title.em .pill { color: var(--emerald); border-color: rgba(107,154,122,.35); background: rgba(107,154,122,.06); }
+.lab-title.r .pill { color: var(--red); border-color: var(--red-3); background: var(--red-2); }
+.lab-title.g .pill { color: var(--green); border-color: var(--green-3); background: var(--green-2); }
 
-/* Token pool — visual representation */
+/* Token pool */
 .pool {
   display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 8px; margin-bottom: 22px;
+  gap: 8px; margin-bottom: 18px;
 }
 .tok {
   position: relative;
   display: flex; flex-direction: column; align-items: center;
   padding: 10px 4px 8px;
-  border: 1px solid var(--rule-2);
-  background: var(--vellum);
+  border: 1px solid var(--border);
+  background: var(--surface);
   transition: all .35s cubic-bezier(.22,1,.36,1);
 }
-.tok-circle {
-  width: 38px; height: 38px; border-radius: 50%;
+.tok-c {
+  width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  font-family: var(--fm); font-size: 11px; font-weight: 500;
   border: 1.5px solid; margin-bottom: 6px;
   transition: all .35s cubic-bezier(.22,1,.36,1);
 }
-.tok-prob {
-  font-family: var(--mono); font-size: 9.5px;
-  color: var(--quill); letter-spacing: .04em;
+.tok-p {
+  font-size: 9.5px; color: var(--muted);
 }
 .tok-bar {
-  position: absolute; bottom: 0; left: 0;
-  height: 2px; background: var(--quill);
-  transition: width .8s cubic-bezier(.22,1,.36,1), background .35s;
+  position: absolute; bottom: 0; left: 0; height: 2px;
+  background: var(--muted); transition: background .3s;
 }
-.tok.t-hi .tok-circle { color: var(--emerald); border-color: var(--emerald); background: rgba(107,154,122,.08); }
-.tok.t-hi .tok-bar { background: var(--emerald); }
-.tok.t-mid .tok-circle { color: var(--gold); border-color: var(--gold); background: rgba(212,175,106,.08); }
-.tok.t-mid .tok-bar { background: var(--gold); }
-.tok.t-lo .tok-circle { color: var(--oxblood); border-color: var(--oxblood); background: rgba(184,93,82,.08); }
-.tok.t-lo .tok-bar { background: var(--oxblood); }
+.tok.t-hi  .tok-c { color: var(--green);  border-color: var(--green);  background: var(--green-2); }
+.tok.t-hi  .tok-bar { background: var(--green); }
+.tok.t-mid .tok-c { color: var(--orange); border-color: var(--orange); background: var(--orange-2); }
+.tok.t-mid .tok-bar { background: var(--orange); }
+.tok.t-lo  .tok-c { color: var(--red);    border-color: var(--red);    background: var(--red-2); }
+.tok.t-lo  .tok-bar { background: var(--red); }
 
 .tok.eliminated {
-  opacity: .2; filter: grayscale(1);
+  opacity: .2; filter: grayscale(.6);
 }
-.tok.eliminated .tok-circle {
+.tok.eliminated .tok-c {
   border-style: dashed;
-  text-decoration: line-through;
 }
 .tok.testing {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,.5);
-  border-color: var(--gold);
+  transform: translateY(-3px);
+  border-color: var(--green);
+  box-shadow: 0 6px 18px rgba(0,0,0,.5);
 }
-.tok.testing .tok-circle {
-  animation: shimmer .6s ease-in-out;
+.tok.testing .tok-c {
+  animation: shimmer .55s ease-in-out;
 }
 .tok.winner {
-  border-color: var(--gold);
-  background: linear-gradient(180deg, var(--gold-glow), transparent);
+  border-color: var(--green);
+  background: var(--green-2);
 }
-.tok.winner .tok-circle {
-  background: var(--gold) !important;
-  color: var(--ink) !important;
-  border-color: var(--gold) !important;
-  box-shadow: 0 0 20px var(--gold);
-  animation: winnerPop .55s cubic-bezier(.34,1.56,.64,1);
+.tok.winner .tok-c {
+  background: var(--green) !important;
+  color: #000 !important;
+  border-color: var(--green) !important;
+  box-shadow: 0 0 18px var(--green);
+  animation: winnerPop .5s cubic-bezier(.34,1.56,.64,1);
 }
 @keyframes winnerPop {
   0%   { transform: scale(1); }
-  50%  { transform: scale(1.25); }
-  100% { transform: scale(1.1); }
+  50%  { transform: scale(1.22); }
+  100% { transform: scale(1.08); }
 }
 @keyframes shimmer {
   0%,100% { transform: scale(1); }
-  50%     { transform: scale(1.1); }
+  50%     { transform: scale(1.08); }
 }
 
-/* Algorithm description */
+/* Algorithm step text */
 .algo-step {
-  font-family: var(--serif); font-style: italic; font-weight: 300;
-  font-size: 14px; line-height: 1.65; color: var(--bone-2);
-  margin-bottom: 18px;
-  min-height: 48px;
+  font-size: 12px; line-height: 1.7;
+  color: var(--soft); margin-bottom: 14px;
+  min-height: 44px;
 }
-.algo-step b { font-style: normal; font-weight: 700; color: var(--bone); }
-.algo-step em { color: var(--gold); }
+.algo-step b { color: var(--text); font-weight: 500; }
+.algo-step em { color: var(--green); font-style: italic; }
 
-/* Coin flip animation */
+/* Coin stage */
 .coin-stage {
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px;
-  background: var(--ink-2);
-  border: 1px solid var(--rule);
-  margin-bottom: 14px;
-  min-height: 78px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: #080b12;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+  min-height: 70px;
 }
-.coin-stage .cs-label {
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--whisper); width: 60px; flex-shrink: 0;
+.coin-stage .cs-l {
+  font-size: 9.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--whisper);
+  width: 50px; flex-shrink: 0;
 }
 .coin {
-  width: 44px; height: 44px; border-radius: 50%;
+  width: 42px; height: 42px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 11px; font-weight: 500;
-  border: 1.5px solid var(--rule-3);
-  background: var(--vellum); color: var(--quill);
-  flex-shrink: 0;
-  transition: all .4s cubic-bezier(.22,1,.36,1);
-  position: relative;
+  font-family: var(--fm); font-size: 12px; font-weight: 600;
+  border: 1.5px solid var(--border-2);
+  background: var(--surface); color: var(--muted);
+  flex-shrink: 0; position: relative;
+  transition: all .35s cubic-bezier(.22,1,.36,1);
 }
-.coin.flipping { animation: flipCoin .55s cubic-bezier(.4,0,.2,1); }
-@keyframes flipCoin {
+.coin.flipping { animation: flip .5s cubic-bezier(.4,0,.2,1); }
+@keyframes flip {
   0%   { transform: rotateY(0); }
   50%  { transform: rotateY(180deg); }
   100% { transform: rotateY(360deg); }
 }
 .coin.heads {
-  border-color: var(--emerald); color: var(--emerald);
-  background: rgba(107,154,122,.12);
+  border-color: var(--green); color: #000;
+  background: var(--green);
+  box-shadow: 0 0 14px var(--green-3);
 }
-.coin.heads::after {
-  content:'H'; font-weight: 700;
-}
+.coin.heads::after { content: 'H'; }
 .coin.tails {
-  border-color: var(--oxblood); color: var(--oxblood);
-  background: rgba(184,93,82,.12);
-  opacity: .55;
+  border-color: var(--red); color: var(--red);
+  background: var(--red-2);
+  opacity: .6;
 }
-.coin.tails::after {
-  content:'T';
+.coin.tails::after { content: 'T'; }
+.coin-result {
+  margin-left: auto; text-align: right;
+  font-family: var(--fm); font-size: 11px;
+  color: var(--muted);
 }
 
 /* Stats panel */
 .stats-panel {
-  background: var(--ink-2);
-  border: 1px solid var(--rule);
-  padding: 14px 18px;
-  font-family: var(--mono); font-size: 11px;
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  min-height: 66px;
-}
-.stats-panel .sp-row { display: flex; justify-content: space-between; }
-.stats-panel .sp-label { color: var(--whisper); letter-spacing: .04em; }
-.stats-panel .sp-val { color: var(--bone); font-weight: 500; }
-.stats-panel .sp-val.gold { color: var(--gold); }
-.stats-panel .sp-val.em { color: var(--emerald); }
-.stats-panel .sp-val.ox { color: var(--oxblood); }
-
-/* Verdict footer */
-.verdict {
-  margin-top: 16px;
+  background: #080b12;
+  border: 1px solid var(--border);
   padding: 12px 16px;
-  font-family: var(--serif); font-style: italic; font-weight: 300;
-  font-size: 13px; line-height: 1.55;
-  display: flex; align-items: center; gap: 10px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-family: var(--fm); font-size: 11px;
+}
+.stats-panel .sp-row {
+  display: flex; justify-content: space-between;
+}
+.stats-panel .sp-l { color: var(--whisper); letter-spacing: .04em; }
+.stats-panel .sp-v { color: var(--text); font-weight: 500; }
+.sp-v.gn { color: var(--green); }
+.sp-v.rd { color: var(--red); }
+.sp-v.gd { color: var(--orange); }
+
+.verdict {
+  margin-top: 14px;
+  padding: 10px 14px; font-size: 11.5px;
+  display: flex; align-items: center; gap: 8px;
+  line-height: 1.55;
 }
 .verdict::before {
-  content:''; width: 8px; height: 8px; border-radius: 50%;
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
   flex-shrink: 0;
 }
 .verdict.bad {
-  background: rgba(184,93,82,.06);
-  border-left: 1px solid var(--oxblood);
-  color: #d18a82;
+  background: var(--red-2);
+  border-left: 1px solid var(--red);
+  color: var(--red);
 }
-.verdict.bad::before { background: var(--oxblood); box-shadow: 0 0 8px rgba(184,93,82,.5); }
+.verdict.bad::before { background: var(--red); box-shadow: 0 0 8px var(--red-3); }
 .verdict.good {
-  background: rgba(107,154,122,.06);
-  border-left: 1px solid var(--emerald);
-  color: #92b89e;
+  background: var(--green-2);
+  border-left: 1px solid var(--green);
+  color: var(--green);
 }
-.verdict.good::before { background: var(--emerald); box-shadow: 0 0 8px rgba(107,154,122,.5); }
+.verdict.good::before { background: var(--green); box-shadow: 0 0 8px var(--green-3); }
 
-/* Trial counter at bottom of lab */
 .lab-foot {
-  padding: 18px 32px;
-  border-top: 1px solid var(--rule);
+  padding: 14px 28px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--vellum);
-  font-family: var(--mono); font-size: 10.5px;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: var(--quill);
+  flex-wrap: wrap; gap: 10px;
+  font-family: var(--fm); font-size: 10.5px;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted);
 }
 .lab-foot .trials b {
-  font-family: var(--serif); font-style: italic; font-weight: 700;
-  font-size: 16px; color: var(--gold); margin: 0 4px;
+  font-family: var(--fh); font-size: 15px; font-weight: 700;
+  color: var(--green); margin: 0 4px;
 }
-.aggregated {
-  display: flex; gap: 18px;
-}
+.aggregated { display: flex; gap: 18px; }
 .agg-cell {
   display: flex; align-items: baseline; gap: 6px;
+  font-family: var(--fm);
 }
 .agg-cell .agg-num {
-  font-family: var(--serif); font-style: italic; font-weight: 500;
-  font-size: 15px; color: var(--bone);
+  font-family: var(--fh); font-size: 14px; font-weight: 700;
+  color: var(--text);
 }
-.agg-cell.ox .agg-num { color: var(--oxblood); }
-.agg-cell.em .agg-num { color: var(--emerald); }
+.agg-cell.r .agg-num { color: var(--red); }
+.agg-cell.g .agg-num { color: var(--green); }
 
-/* ════════════════════════════════════════════════════════
-   §4 — THEOREMS
-═════════════════════════════════════════════════════════ */
-.thm { padding: 32px 28px; min-height: 380px; display: flex; flex-direction: column; gap: 4px; }
-.thm-num {
-  font-family: var(--serif); font-style: italic; font-weight: 700;
-  font-size: 11px; letter-spacing: .04em;
-  color: var(--gold); margin-bottom: 6px;
+/* ════════════════════════════════════════════
+   §4 THEOREMS
+═════════════════════════════════════════════ */
+.thm {
+  background: var(--card); padding: 24px;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 4px;
+  min-height: 360px;
+}
+.thm-l {
+  font-size: 9.5px; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--green);
+  margin-bottom: 8px; font-weight: 500;
 }
 .thm h4 {
-  font-family: var(--serif); font-weight: 500;
-  font-size: 20px; line-height: 1.2; letter-spacing: -.01em;
-  color: var(--bone); margin-bottom: 14px;
+  font-family: var(--fh); font-size: 17px;
+  font-weight: 700; color: #fff;
+  margin-bottom: 10px; line-height: 1.3;
 }
-.thm h4 em { font-style: italic; color: var(--gold); }
+.thm h4 em {
+  font-style: italic; font-weight: 600; color: var(--green);
+}
 .thm p {
-  font-family: var(--mono); font-weight: 300;
-  font-size: 12px; line-height: 1.75; color: var(--bone-2);
-  margin-bottom: 8px;
+  font-size: 12px; color: var(--soft); line-height: 1.7;
+  margin-bottom: 7px;
 }
-.thm p strong { color: var(--bone); font-weight: 500; }
+.thm p strong { color: var(--text); font-weight: 500; }
 
-/* ════════════════════════════════════════════════════════
-   §5 — SIMULATION CHARTS
-═════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   §5 SIMULATION
+═════════════════════════════════════════════ */
 .plot {
-  background: var(--paper);
-  padding: 22px 26px;
+  background: var(--card); padding: 18px 22px;
 }
 .plot-h {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: var(--quill); margin-bottom: 4px;
+  font-family: var(--fm); font-size: 9.5px;
+  letter-spacing: .15em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 4px;
 }
-.plot-h-title {
-  font-family: var(--serif); font-weight: 500;
-  font-size: 16px; color: var(--bone); margin-bottom: 18px;
-  letter-spacing: -.01em;
+.plot-t {
+  font-family: var(--fh); font-size: 14px; font-weight: 700;
+  color: var(--text); margin-bottom: 14px;
+  letter-spacing: -.005em;
 }
 .plot canvas {
   display: block !important;
@@ -937,368 +879,365 @@ body::after {
 .plot-sm canvas { max-height: 150px !important; }
 
 .finding {
-  background: var(--paper);
-  padding: 20px 22px;
-  border-left: 1px solid var(--gold);
+  background: var(--card); padding: 16px 18px;
+  border-left: 2px solid var(--fl, var(--green));
   position: relative;
 }
 .finding-num {
-  position: absolute; top: 12px; right: 18px;
-  font-family: var(--serif); font-style: italic; font-weight: 700;
-  font-size: 22px; color: var(--gold-glow);
+  position: absolute; top: 10px; right: 14px;
+  font-family: var(--fh); font-size: 22px; font-weight: 800;
+  color: var(--fl-bg, rgba(110,231,183,.1));
+  font-style: italic;
 }
 .finding .fl {
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .2em; text-transform: uppercase;
-  color: var(--gold); margin-bottom: 8px;
+  font-size: 9.5px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--fl, var(--green));
+  margin-bottom: 6px; font-weight: 500;
 }
 .finding p {
-  font-family: var(--serif); font-style: italic; font-weight: 300;
-  font-size: 13px; line-height: 1.55; color: var(--bone-2);
+  font-size: 11.5px; color: var(--soft);
+  line-height: 1.6;
 }
-.finding.f-em   { border-left-color: var(--emerald); }
-.finding.f-em   .fl { color: var(--emerald); }
-.finding.f-em   .finding-num { color: rgba(107,154,122,.2); }
-.finding.f-in   { border-left-color: var(--indigo); }
-.finding.f-in   .fl { color: var(--indigo); }
-.finding.f-in   .finding-num { color: rgba(122,143,184,.2); }
-.finding.f-ox   { border-left-color: var(--oxblood); }
-.finding.f-ox   .fl { color: var(--oxblood); }
-.finding.f-ox   .finding-num { color: rgba(184,93,82,.2); }
 
-/* ════════════════════════════════════════════════════════
-   §6 — RESULTS
-═════════════════════════════════════════════════════════ */
-.results-control {
+/* ════════════════════════════════════════════
+   §6 RESULTS
+═════════════════════════════════════════════ */
+.res-control {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 16px; margin-bottom: 28px;
+  flex-wrap: wrap; gap: 14px;
+  margin-bottom: 24px;
 }
-.dataset-tabs {
-  display: flex; gap: 0;
-  border: 1px solid var(--rule-2);
+.dtabs {
+  display: flex;
+  border: 1px solid var(--border);
 }
-.ds-tab {
-  padding: 10px 22px;
-  font-family: var(--mono); font-size: 10.5px;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--quill); background: transparent;
+.dtab {
+  padding: 9px 20px;
+  font-family: var(--fm); font-size: 10.5px;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); background: transparent;
   border: none; cursor: pointer;
-  border-right: 1px solid var(--rule-2);
-  transition: all .25s;
-  position: relative;
+  border-right: 1px solid var(--border);
+  transition: all .22s;
 }
-.ds-tab:last-child { border-right: none; }
-.ds-tab.active {
-  color: var(--ink); background: var(--gold);
+.dtab:last-child { border-right: none; }
+.dtab.active {
+  color: #000; background: var(--green);
 }
-.ds-tab:hover:not(.active) { color: var(--bone-2); background: var(--vellum); }
+.dtab:hover:not(.active) {
+  color: var(--text); background: var(--card-2);
+}
 
-.samples-link {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 20px;
-  font-family: var(--serif); font-style: italic;
-  font-size: 14px; color: var(--bone-2);
+.samples-btn {
+  display: flex; align-items: center; gap: 9px;
+  height: 38px; padding: 0 18px;
   background: transparent;
-  border: 1px solid var(--rule-2);
-  cursor: pointer; transition: all .25s;
+  border: 1px solid var(--indigo-3);
+  color: var(--indigo);
+  font-family: var(--fm); font-size: 10.5px;
+  letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .22s;
 }
-.samples-link:hover {
-  color: var(--gold); border-color: var(--gold);
-  background: var(--gold-glow);
+.samples-btn:hover {
+  border-color: var(--indigo);
+  background: var(--indigo-2);
 }
-.samples-link svg { width: 14px; height: 14px; }
+.samples-btn svg { width: 14px; height: 14px; }
 
 .dpanel { display: none; }
 .dpanel.active { display: block; }
 
-.results-layout {
-  display: grid; grid-template-columns: 200px 1fr;
-  gap: 32px;
+.res-layout {
+  display: grid; grid-template-columns: 168px 1fr;
+  gap: 22px;
 }
-.eps-stack {
-  display: flex; flex-direction: column; gap: 8px;
-}
-.eps-stack .eyebrow { margin-bottom: 14px; }
+.eps-stack { display: flex; flex-direction: column; gap: 6px; }
+.eps-stack .eyebrow { margin-bottom: 12px; }
 .eps-btn {
-  padding: 14px 16px;
-  background: var(--paper); border: 1px solid var(--rule-2);
-  font-family: var(--mono); cursor: pointer;
-  text-align: left; transition: all .3s cubic-bezier(.22,1,.36,1);
-  color: var(--quill);
+  padding: 12px 14px;
+  background: var(--card); border: 1px solid var(--border);
+  font-family: var(--fm); cursor: pointer;
+  text-align: left; transition: all .25s cubic-bezier(.22,1,.36,1);
+  color: var(--muted);
   position: relative; overflow: hidden;
 }
 .eps-btn::before {
-  content:''; position: absolute; top:0; left:0; bottom:0; width: 3px;
-  background: transparent; transition: background .3s;
+  content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 2px;
+  background: transparent; transition: background .25s;
 }
 .eps-btn .ev {
   display: block;
-  font-family: var(--serif); font-style: italic; font-weight: 500;
-  font-size: 26px; letter-spacing: -.02em; color: var(--bone);
-  line-height: 1; margin-bottom: 4px;
+  font-family: var(--fh); font-size: 18px; font-weight: 700;
+  color: var(--text); line-height: 1; margin-bottom: 3px;
 }
 .eps-btn .el {
-  font-size: 9.5px; letter-spacing: .12em;
+  font-size: 9px; letter-spacing: .1em; opacity: .8;
 }
 .eps-btn.active {
-  color: var(--gold); background: rgba(212,175,106,.04);
-  border-color: rgba(212,175,106,.4);
+  color: var(--green); background: var(--green-2);
+  border-color: var(--green-3);
 }
-.eps-btn.active::before { background: var(--gold); }
-.eps-btn.active .ev { color: var(--gold); }
+.eps-btn.active::before { background: var(--green); }
+.eps-btn.active .ev { color: var(--green); }
 
 .metric-grid {
   display: grid; grid-template-columns: 1fr 1fr;
-  gap: 1px; background: var(--rule);
+  gap: 1px; background: var(--border);
 }
 .metric-cell {
-  background: var(--paper); padding: 18px 22px;
+  background: var(--card); padding: 14px 18px;
 }
 .metric-cell .mt {
-  font-family: var(--serif); font-style: italic; font-weight: 500;
-  font-size: 14px; color: var(--bone); margin-bottom: 4px;
-  letter-spacing: -.01em;
+  font-family: var(--fh); font-size: 12px; font-weight: 700;
+  color: var(--text); margin-bottom: 3px;
 }
 .metric-cell .ms {
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--quill); margin-bottom: 14px;
+  font-family: var(--fm); font-size: 9.5px;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 12px;
 }
-.metric-cell canvas { max-height: 140px !important; display: block !important; }
-
-.author-note {
-  margin-top: 24px;
-  padding: 18px 22px;
-  background: rgba(122,143,184,.04);
-  border-left: 1px solid var(--indigo);
-  font-family: var(--serif); font-style: italic; font-weight: 300;
-  font-size: 13.5px; line-height: 1.65; color: var(--bone-2);
+.metric-cell canvas {
+  max-height: 130px !important; display: block !important;
 }
-.author-note b { font-style: normal; font-weight: 700; color: var(--bone); }
 
-/* ════════════════════════════════════════════════════════
-   §7 — ROAD AHEAD
-═════════════════════════════════════════════════════════ */
+.note {
+  margin-top: 22px;
+  padding: 11px 14px; font-size: 12px;
+  color: var(--soft); line-height: 1.65;
+  background: var(--indigo-2);
+  border: 1px solid rgba(129,140,248,.18);
+  border-left: 2px solid var(--indigo);
+}
+.note strong { color: var(--text); font-weight: 500; }
+.note code {
+  font-family: var(--fm); font-size: 11px;
+  color: var(--green); background: rgba(110,231,183,.06);
+  padding: 1px 5px;
+}
+
+/* ════════════════════════════════════════════
+   §7 ROAD AHEAD
+═════════════════════════════════════════════ */
 .fc {
-  background: var(--paper); padding: 32px 28px;
-  display: flex; flex-direction: column; gap: 12px;
+  background: var(--card); padding: 26px 24px;
+  display: flex; flex-direction: column; gap: 10px;
   position: relative; overflow: hidden;
-  min-height: 280px;
+  min-height: 240px;
 }
 .fc-step {
-  position: absolute; top: 22px; right: 26px;
-  font-family: var(--serif); font-style: italic; font-weight: 700;
-  font-size: 56px; line-height: 1; letter-spacing: -.04em;
-  color: rgba(214,194,154,.06);
+  position: absolute; top: 18px; right: 22px;
+  font-family: var(--fh); font-size: 38px; font-weight: 800;
+  color: rgba(255,255,255,.04); line-height: 1;
 }
 .fc-status {
-  font-family: var(--mono); font-size: 9px;
-  letter-spacing: .2em; text-transform: uppercase;
-  padding: 4px 10px; width: fit-content;
-  border: 1px solid;
+  font-family: var(--fm); font-size: 9px;
+  letter-spacing: .15em; text-transform: uppercase;
+  padding: 3px 10px; width: fit-content; border: 1px solid;
 }
-.fc-status.done { color: var(--emerald); border-color: rgba(107,154,122,.4); background: rgba(107,154,122,.05); }
-.fc-status.prog { color: var(--gold); border-color: rgba(212,175,106,.4); background: rgba(212,175,106,.05); }
-.fc-status.plan { color: var(--indigo); border-color: rgba(122,143,184,.4); background: rgba(122,143,184,.05); }
+.fc-status.done { color: var(--green);  border-color: var(--green-3);  background: var(--green-2); }
+.fc-status.prog { color: var(--indigo); border-color: var(--indigo-3); background: var(--indigo-2); }
+.fc-status.plan { color: var(--orange); border-color: var(--orange-3); background: var(--orange-2); }
+
 .fc h3 {
-  font-family: var(--serif); font-weight: 500;
-  font-size: 22px; letter-spacing: -.01em; color: var(--bone);
+  font-family: var(--fh); font-size: 18px; font-weight: 700;
+  color: #fff; line-height: 1.3;
 }
-.fc h3 em { font-style: italic; color: var(--gold); }
+.fc h3 em { font-style: italic; font-weight: 600; color: var(--green); }
 .fc p {
-  font-family: var(--mono); font-weight: 300;
-  font-size: 12px; line-height: 1.7; color: var(--bone-2);
+  font-size: 12px; color: var(--soft); line-height: 1.7;
 }
 
 .colophon {
   display: grid; grid-template-columns: 1fr 1.4fr;
-  gap: 56px;
-  border-top: 1px solid var(--rule);
-  padding-top: 36px; margin-top: 36px;
+  gap: 36px;
+  border-top: 1px solid var(--border);
+  padding-top: 28px; margin-top: 30px;
 }
-.colophon-block .eyebrow { margin-bottom: 18px; }
+.colophon .eyebrow { margin-bottom: 14px; }
 .team {
-  display: flex; flex-direction: column; gap: 16px;
-}
-.team-member {
-  display: flex; align-items: baseline; gap: 16px;
-  padding-bottom: 12px; border-bottom: 1px solid var(--rule);
-}
-.team-member:last-child { border-bottom: none; }
-.team-member .roll {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: .15em; color: var(--gold);
-  min-width: 80px;
-}
-.team-member .name {
-  font-family: var(--serif); font-style: italic; font-weight: 500;
-  font-size: 17px; color: var(--bone); letter-spacing: -.005em;
-}
-.refs {
   display: flex; flex-direction: column; gap: 12px;
 }
+.team-mem {
+  display: grid; grid-template-columns: 80px 1fr;
+  gap: 14px; align-items: baseline;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.team-mem:last-child { border-bottom: none; }
+.team-mem .roll {
+  font-family: var(--fm); font-size: 10px;
+  letter-spacing: .14em; color: var(--green);
+}
+.team-mem .name {
+  font-family: var(--fh); font-size: 14px; font-weight: 600;
+  color: var(--text);
+}
+.refs { display: flex; flex-direction: column; gap: 10px; }
 .ref-item {
-  display: grid; grid-template-columns: 28px 1fr; gap: 10px;
-  padding-bottom: 10px; border-bottom: 1px solid var(--rule);
-  font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
-  color: var(--bone-2);
+  display: grid; grid-template-columns: 24px 1fr;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11.5px; line-height: 1.55;
+  color: var(--soft);
 }
 .ref-item:last-child { border-bottom: none; }
 .ref-item .num {
-  font-family: var(--serif); font-style: italic; font-weight: 700;
-  font-size: 14px; color: var(--gold); line-height: 1.4;
+  font-family: var(--fh); font-size: 12px; font-weight: 700;
+  color: var(--green);
 }
-.ref-item em { color: var(--bone); font-style: normal; font-weight: 500; }
+.ref-item em { color: var(--text); font-style: italic; font-weight: 500; }
 
-/* ════════════════════════════════════════════════════════
-   POPUP — sample comparison (editorial reading)
-═════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   POPUP
+═════════════════════════════════════════════ */
 .pop {
   position: fixed; inset: 0; z-index: 500;
-  background: rgba(11,10,8,.85);
-  backdrop-filter: blur(14px) saturate(1.2);
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: none;
   align-items: center; justify-content: center;
-  padding: 32px;
+  padding: 24px;
 }
 .pop.open { display: flex; }
 .pop-box {
-  background: var(--paper);
-  border: 1px solid var(--rule-2);
-  max-width: 1000px; width: 100%; max-height: 92vh;
-  overflow-y: auto;
-  position: relative;
-  animation: popIn .5s cubic-bezier(.22,1,.36,1);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  max-width: 920px; width: 100%; max-height: 90vh;
+  overflow-y: auto; position: relative;
+  animation: popIn .35s cubic-bezier(.22,1,.36,1);
 }
 @keyframes popIn {
-  from { opacity: 0; transform: scale(.96) translateY(12px); }
+  from { opacity: 0; transform: scale(.97) translateY(10px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .pop-head {
-  padding: 24px 32px;
-  border-bottom: 1px solid var(--rule);
-  display: flex; align-items: center; gap: 16px;
+  padding: 20px 26px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 14px;
   position: sticky; top: 0;
-  background: var(--paper); z-index: 10;
+  background: var(--card); z-index: 10;
 }
 .pop-head h3 {
-  font-family: var(--serif); font-weight: 500;
-  font-size: 22px; color: var(--bone);
-  letter-spacing: -.01em; flex: 1;
+  font-family: var(--fh); font-size: 17px; font-weight: 700;
+  color: #fff; flex: 1;
 }
-.pop-head h3 em { font-style: italic; color: var(--gold); }
+.pop-head h3 em {
+  font-style: italic; font-weight: 600; color: var(--green);
+}
 .pop-close {
-  width: 34px; height: 34px;
-  border: 1px solid var(--rule-2); background: transparent;
-  color: var(--quill); cursor: pointer;
-  font-size: 16px;
+  width: 30px; height: 30px;
+  border: 1px solid var(--border-2); background: transparent;
+  color: var(--muted); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: all .25s;
+  font-size: 14px; transition: all .22s;
 }
-.pop-close:hover { border-color: var(--oxblood); color: var(--oxblood); }
-
+.pop-close:hover {
+  border-color: var(--red); color: var(--red);
+}
 .pop-nav {
-  display: flex; align-items: center; gap: 10px;
-  padding: 16px 32px;
-  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 26px;
+  border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
 .pop-nav-l {
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .2em; text-transform: uppercase;
-  color: var(--quill);
+  font-family: var(--fm); font-size: 9.5px;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted);
 }
 .pop-sel {
-  padding: 6px 14px;
-  font-family: var(--mono); font-size: 10.5px;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: var(--quill); background: transparent;
-  border: 1px solid var(--rule-2); cursor: pointer;
-  transition: all .25s;
+  padding: 5px 12px;
+  font-family: var(--fm); font-size: 10.5px;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); background: transparent;
+  border: 1px solid var(--border-2); cursor: pointer;
+  transition: all .2s;
 }
 .pop-sel.active {
-  color: var(--gold); border-color: var(--gold);
-  background: var(--gold-glow);
+  color: var(--green); border-color: var(--green-3);
+  background: var(--green-2);
 }
-.pop-sel:hover:not(.active) { color: var(--bone-2); }
+.pop-sel:hover:not(.active) { color: var(--text); }
 
 .pop-body {
-  padding: 24px 32px;
+  padding: 22px 26px;
   display: grid; grid-template-columns: 1fr 1fr;
-  gap: 22px;
+  gap: 16px;
 }
 .pop-section h4 {
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .22em; text-transform: uppercase;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--rule);
+  font-family: var(--fm); font-size: 9.5px;
+  letter-spacing: .2em; text-transform: uppercase;
+  margin-bottom: 9px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  font-weight: 500;
 }
-.pop-section.ref h4 { color: var(--bone-2); }
-.pop-section.pub h4 { color: var(--quill); }
-.pop-section.sm  h4 { color: var(--oxblood); }
-.pop-section.rnm h4 { color: var(--emerald); }
+.pop-section.ref h4 { color: var(--soft); }
+.pop-section.pub h4 { color: var(--muted); }
+.pop-section.sm  h4 { color: var(--red); }
+.pop-section.rnm h4 { color: var(--green); }
 .txt-block {
-  font-family: var(--serif); font-weight: 300;
-  font-size: 14px; line-height: 1.7; color: var(--bone);
-  background: var(--vellum);
-  border: 1px solid var(--rule);
-  padding: 16px 18px;
-  min-height: 110px;
-  letter-spacing: -.005em;
+  font-size: 12.5px; line-height: 1.75;
+  color: var(--soft);
+  background: rgba(255,255,255,.02);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  min-height: 100px;
 }
 .pop-comment {
-  padding: 22px 32px 28px;
-  border-top: 1px solid var(--rule);
+  padding: 18px 26px 22px;
+  border-top: 1px solid var(--border);
 }
 .pop-comment .cl {
-  font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: .22em; text-transform: uppercase;
-  color: var(--gold); margin-bottom: 10px;
-  display: flex; align-items: center; gap: 10px;
+  font-family: var(--fm); font-size: 9.5px;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--indigo); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 9px;
 }
 .pop-comment .cl::before {
-  content:''; width: 18px; height: 1px; background: var(--gold);
+  content: ''; width: 18px; height: 1px; background: var(--indigo);
 }
 .pop-comment .cb {
-  font-family: var(--serif); font-style: italic; font-weight: 300;
-  font-size: 14.5px; line-height: 1.65; color: var(--bone-2);
-  background: var(--vellum);
-  border-left: 1px solid var(--gold);
-  padding: 14px 18px;
+  background: var(--indigo-2);
+  border-left: 1px solid var(--indigo);
+  padding: 11px 14px; font-size: 12px;
+  color: var(--soft); line-height: 1.7;
 }
 
-/* ════════════════════════════════════════════════════════
-   RESPONSIVE — iPad Pro and below
-═════════════════════════════════════════════════════════ */
-@media (max-width: 1100px) {
-  .page { padding: 0 36px 64px; }
-  .head h1 { font-size: clamp(32px, 5vw, 48px); }
-  .hero { grid-template-columns: 1fr; gap: 36px; }
-  .colophon { grid-template-columns: 1fr; gap: 32px; }
-  .results-layout { grid-template-columns: 1fr; gap: 24px; }
-  .eps-stack { flex-direction: row; }
+/* ════════════════════════════════════════════
+   RESPONSIVE
+═════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .page { padding: 0 32px 48px; }
+  .hero { grid-template-columns: 1fr; gap: 32px; }
+  .colophon { grid-template-columns: 1fr; gap: 26px; }
+  .res-layout { grid-template-columns: 1fr; }
+  .eps-stack { flex-direction: row; gap: 8px; }
   .eps-stack .eyebrow { display: none; }
   .lab-stage { grid-template-columns: 1fr; }
   .lab-divider {
-    grid-row: auto;
-    border: none; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-    height: 48px;
+    border: none;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    height: 44px;
   }
-  .rail { display: none; }
 }
 @media (max-width: 720px) {
-  .page { padding: 0 22px 48px; }
-  .masthead { padding: 0 22px; height: 48px; }
-  .foot { padding: 0 22px; }
-  .stage { top: 48px; }
-  .stats { grid-template-columns: 1fr 1fr; }
-  .g-3, .g-4, .g-5 { grid-template-columns: 1fr; }
-  .pop-body { grid-template-columns: 1fr; }
+  .page { padding: 0 22px 40px; }
+  .topbar { padding: 0 22px; }
+  .nav-bar .nav-inner { gap: 8px; }
+  .nav-section { min-width: 0; padding: 0 12px; gap: 10px; }
+  .nav-section .ns-counter { display: none; }
+  .nav-progress-mini { display: none; }
   .head { grid-template-columns: 1fr; }
   .head-right { text-align: left; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .g3, .g4, .g5 { grid-template-columns: 1fr; }
+  .pop-body { grid-template-columns: 1fr; }
   .hero-meta { grid-template-columns: 1fr; }
-  .hero-meta-cell { border-right: none; border-bottom: 1px solid var(--rule); }
+  .hero-meta-cell { border-right: none; border-bottom: 1px solid var(--border); }
+  .tb-meta span:not(.tb-dot) { display: none; }
 }
 </style>
 </head>
@@ -1309,18 +1248,18 @@ body::after {
   <div class="pop-box">
     <div class="pop-head">
       <h3>Generated text — <em>side by side</em></h3>
-      <span class="tag tag-gold" id="pop-eps-tag"></span>
+      <span class="tag tag-g" id="pop-eps-tag"></span>
       <button class="pop-close" onclick="popCloseDirect()">✕</button>
     </div>
     <div class="pop-nav">
       <span class="pop-nav-l">Corpus:</span>
-      <button class="pop-sel" id="pn-tab"    onclick="popSetDS('tab',this)">TAB</button>
-      <button class="pop-sel" id="pn-yelp"   onclick="popSetDS('yelp',this)">Yelp</button>
-      <button class="pop-sel" id="pn-pubmed" onclick="popSetDS('pubmed',this)">PubMed</button>
+      <button class="pop-sel" id="pn-tab"    onclick="popSetDS('tab')">TAB</button>
+      <button class="pop-sel" id="pn-yelp"   onclick="popSetDS('yelp')">Yelp</button>
+      <button class="pop-sel" id="pn-pubmed" onclick="popSetDS('pubmed')">PubMed</button>
       <span class="pop-nav-l" style="margin-left:14px;">ε:</span>
-      <button class="pop-sel" id="pe-0" onclick="popSetEps(0,this)">ε₁ low</button>
-      <button class="pop-sel" id="pe-1" onclick="popSetEps(1,this)">ε₂ mid</button>
-      <button class="pop-sel" id="pe-2" onclick="popSetEps(2,this)">ε₃ high</button>
+      <button class="pop-sel" id="pe-0" onclick="popSetEps(0)">ε₁ low</button>
+      <button class="pop-sel" id="pe-1" onclick="popSetEps(1)">ε₂ mid</button>
+      <button class="pop-sel" id="pe-2" onclick="popSetEps(2)">ε₃ high</button>
     </div>
     <div class="pop-body">
       <div class="pop-section ref">
@@ -1332,65 +1271,59 @@ body::after {
         <div class="txt-block" id="p-pub"></div>
       </div>
       <div class="pop-section sm">
-        <h4>Softmax · baseline</h4>
+        <h4>Softmax — baseline</h4>
         <div class="txt-block" id="p-sm"></div>
       </div>
       <div class="pop-section rnm">
-        <h4>RNM-Exponential · ours</h4>
+        <h4>RNM-Exponential — ours</h4>
         <div class="txt-block" id="p-rnm"></div>
       </div>
     </div>
     <div class="pop-comment">
-      <div class="cl">Editor's note</div>
+      <div class="cl">Reviewer note</div>
       <div class="cb" id="p-note"></div>
     </div>
   </div>
 </div>
 
-<!-- ════════ MASTHEAD ════════ -->
-<header class="masthead" id="masthead">
-  <div class="brand">
-    <b>RNM-Exponential</b>
-    <span class="brand-rule"></span>
-    <i>A sharper sampler for differentially-private decoding</i>
+<!-- ════════ TOPBAR ════════ -->
+<header class="topbar" id="topbar">
+  <div class="tb-brand">
+    DA5001 · IIT MADRAS · 2025
+    <span class="tb-brand-sep"></span>
+    <i>RNM-Exponential</i>
   </div>
-  <div class="masthead-meta">
-    <span class="live-dot">DP Decoding · Active</span>
-    <span>DA5001 · IIT Madras · Term Project, 2025</span>
+  <div class="tb-meta">
+    <span class="tb-dot">DP Decoding Active</span>
+    <span>DA24B016 · DA24B028 · DA24B050</span>
   </div>
 </header>
-
-<!-- ════════ SIDE RAIL ════════ -->
-<nav class="rail" id="rail"></nav>
-
-<!-- ════════ CURTAIN ════════ -->
-<div class="curtain" id="curtain"></div>
 
 <!-- ════════ STAGE ════════ -->
 <main class="stage">
 
-<!-- ╔═══ §0 — HERO ═══╗ -->
+<!-- §0 HERO -->
 <section class="scene active" id="sec-0">
   <div class="page">
     <div class="hero">
-      <div class="hero-left reveal">
+      <div class="reveal" style="display:flex;flex-direction:column;gap:22px;">
         <div class="hero-folio">
           <span>Folio I</span>
           <span class="ff-rule"></span>
           <b>Differentially-Private LLM Decoding</b>
         </div>
-        <h1 class="hero-title">
-          <span class="word-1">Sharper</span>
-          <span class="word-2">sampling,</span>
-          <span class="word-3">safer text.</span>
+        <h1 class="hero-h1">
+          Sharper<br>
+          <span class="h-soft">sampling,</span><br>
+          <span class="h-glow">safer text.</span>
         </h1>
         <p class="hero-lede">
-          Softmax assigns probability to <strong>every token</strong> in the vocabulary &mdash; even the garbage ones. Under differential privacy, this degrades badly. We replace the final sampling step with <em>Report-Noisy-Max using Exponential noise</em> &mdash; and prove it is <strong>strictly better</strong>.
+          Softmax assigns probability to <strong>every token</strong> in the vocabulary — even garbage ones. Under differential privacy, this degrades badly. We replace the final sampling step with <em>Report-Noisy-Max using Exponential noise</em>, and prove it is <strong>strictly better</strong>.
         </p>
         <div class="hero-chips">
-          <span class="tag tag-gold">RNM-Exponential</span>
-          <span class="tag tag-em">ε-DP guaranteed</span>
-          <span class="tag tag-in">InvisibleInk extension</span>
+          <span class="tag tag-g">RNM-Exponential</span>
+          <span class="tag tag-i">ε-DP Guaranteed</span>
+          <span class="tag tag-o">InvisibleInk Extension</span>
         </div>
         <div class="hero-meta">
           <div class="hero-meta-cell">
@@ -1403,87 +1336,90 @@ body::after {
           </div>
           <div class="hero-meta-cell">
             <div class="l">Samples</div>
-            <div class="v">100 per ε</div>
+            <div class="v">100 / ε level</div>
           </div>
         </div>
       </div>
       <div class="reveal">
         <div class="codex">
           <div class="codex-bar">
+            <span class="cdot r"></span>
+            <span class="cdot y"></span>
+            <span class="cdot g"></span>
             <span class="filename"><b>mechanism_swap</b>.py</span>
             <span class="lang">Python · DP</span>
           </div>
           <div class="codex-body">
-<span class="cm-cm"># Standard DP decoding (InvisibleInk baseline)</span>
-<span class="cm-kw">def</span> <span class="cm-fn">sample_softmax</span>(<span class="cm-nm">logits</span>, <span class="cm-nm">τ</span>):
-&nbsp;&nbsp;<span class="cm-cm"># Gumbel-Max → flat distribution</span>
-&nbsp;&nbsp;<span class="cm-kw">return</span> <span class="cm-fn">argmax</span>(logits/τ + <span class="cm-fn">Gumbel</span>())
+<span class="cm"># Standard DP decoding (InvisibleInk baseline)</span>
+<span class="kw">def</span> <span class="fn">sample_softmax</span>(<span class="nm">logits</span>, <span class="nm">τ</span>):
+&nbsp;&nbsp;<span class="cm"># Gumbel-Max → flat distribution</span>
+&nbsp;&nbsp;<span class="kw">return</span> <span class="fn">argmax</span>(logits/τ + <span class="fn">Gumbel</span>())
 
-<span class="cm-cm"># Our proposal — RNM with Exponential noise</span>
-<span class="cm-kw">def</span> <span class="cm-fn">sample_rnm</span>(<span class="cm-nm">logits</span>, <span class="cm-nm">λ</span>):
-&nbsp;&nbsp;<span class="cm-cm"># Sharp decay → concentrate on head</span>
-&nbsp;&nbsp;<span class="cm-nm">noise</span> = <span class="cm-fn">Exponential</span>(<span class="cm-nm">scale</span>=λ)
-&nbsp;&nbsp;<span class="cm-kw">return</span> <span class="cm-fn">argmax</span>(logits + noise)
+<span class="cm"># Our proposal — RNM with Exponential noise</span>
+<span class="kw">def</span> <span class="fn">sample_rnm</span>(<span class="nm">logits</span>, <span class="nm">λ</span>):
+&nbsp;&nbsp;<span class="cm"># Sharp decay → concentrate on head</span>
+&nbsp;&nbsp;<span class="nm">noise</span> = <span class="fn">Exponential</span>(<span class="nm">scale</span>=λ)
+&nbsp;&nbsp;<span class="kw">return</span> <span class="fn">argmax</span>(logits + noise)
 
-<span class="cm-cm"># Same ε. Strictly better utility. (Thm. 3)</span>
+<span class="cm"># Same ε. Strictly better utility. (Thm. 3)</span>
           </div>
         </div>
       </div>
     </div>
     <div class="stats reveal">
       <div class="stats-cell">
-        <div class="num">3<span class="unit">corpora</span></div>
+        <div class="num">3<span class="u">datasets</span></div>
         <div class="lbl">TAB · Yelp · PubMed</div>
       </div>
       <div class="stats-cell">
-        <div class="num">3<span class="unit">ε levels</span></div>
+        <div class="num">3<span class="u">ε vals</span></div>
         <div class="lbl">Varying privacy budget</div>
       </div>
       <div class="stats-cell">
-        <div class="num">100<span class="unit">/ ε</span></div>
+        <div class="num">100<span class="u">/ ε</span></div>
         <div class="lbl">Generated samples</div>
       </div>
       <div class="stats-cell">
-        <div class="num">5<span class="unit">metrics</span></div>
+        <div class="num">5<span class="u">metrics</span></div>
         <div class="lbl">PPL · BERT · MAUVE · Rep · TTR</div>
       </div>
       <div class="stats-cell">
-        <div class="num"><em>2×</em></div>
+        <div class="num"><em>2</em><span class="u">×</span></div>
         <div class="lbl">Error reduction (p → 0)</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ╔═══ §1 — PROBLEM ═══╗ -->
+<!-- §1 PROBLEM -->
 <section class="scene" id="sec-1">
   <div class="page">
     <header class="head reveal">
-      <div class="head-left">
+      <div>
         <div class="head-meta">
-          <span class="chap-num">I.</span>
+          <span class="chap-num">§ 01</span>
           <span class="chap-rule"></span>
           <span>The motivation</span>
         </div>
-        <h1>Why <em>Softmax</em> fails <span class="ampersand">under</span> privacy</h1>
+        <h1>Why <em>Softmax fails</em> <span class="amp">under</span> privacy</h1>
       </div>
       <div class="head-right">Section 01 / 07<br>Three problems</div>
     </header>
-    <div class="g-3 problem-grid reveal">
-      <div class="card card-hl card-hl-ox">
-        <div class="card-numeral">i.</div>
+    <div class="g3 reveal">
+      <div class="card card-hl card-hl-r">
+        <div class="card-num">01</div>
         <div class="eyebrow">Problem · Training</div>
         <h3>LLMs <em>memorize</em></h3>
         <p>Large language models trained on sensitive corpora can reproduce verbatim text — exposing private information through <strong>membership inference</strong> and <strong>data extraction attacks</strong> at inference time.</p>
       </div>
-      <div class="card card-hl card-hl-in">
-        <div class="card-numeral">ii.</div>
+      <div class="card card-hl card-hl-i">
+        <div class="card-num">02</div>
         <div class="eyebrow">Problem · Defence</div>
         <h3>DP-SGD is <em>too costly</em></h3>
-        <p>Per-sample gradient clipping scales poorly to billion-parameter models. <strong>Inference-time DP decoding</strong> — injecting noise into token selection — is far more practical, but has its own pitfalls.</p>
+        <p>Per-sample gradient clipping scales poorly to billion-parameter models. <strong>Inference-time DP decoding</strong> — injecting noise into the token selection step — is far more practical, but has its own pitfalls.</p>
       </div>
-      <div class="card card-hl card-hl-gold">
-        <div class="card-numeral">iii.</div>
+      <div class="card card-hl card-hl-g">
+        <div class="card-num">03</div>
         <div class="eyebrow">Problem · Mechanism</div>
         <h3>Softmax <em>spreads the mass</em></h3>
         <p>The standard Exponential Mechanism distributes probability across <em>all</em> tokens. Under high privacy noise, this assigns non-trivial mass to garbage tokens — producing <strong>incoherent, low-quality text</strong>.</p>
@@ -1492,22 +1428,22 @@ body::after {
   </div>
 </section>
 
-<!-- ╔═══ §2 — SOLUTION ═══╗ -->
+<!-- §2 SOLUTION -->
 <section class="scene" id="sec-2">
   <div class="page">
     <header class="head reveal">
-      <div class="head-left">
+      <div>
         <div class="head-meta">
-          <span class="chap-num">II.</span>
+          <span class="chap-num">§ 02</span>
           <span class="chap-rule"></span>
           <span>Our solution</span>
         </div>
-        <h1>Replace Gumbel <span class="ampersand">with</span> <em>Exponential</em></h1>
+        <h1>Replace Gumbel <span class="amp">with</span> <em>Exponential</em></h1>
       </div>
       <div class="head-right">Section 02 / 07<br>Drop-in replacement</div>
     </header>
-    <div class="g-2 reveal">
-      <div class="card solution-card card-vl">
+    <div class="g2 reveal">
+      <div class="card card-vl" style="padding:30px;">
         <div class="eyebrow">Core mechanism</div>
         <h3>RNM with <em>Exponential noise</em></h3>
         <p>Instead of Gumbel noise (Softmax sampling), we add <strong>i.i.d. Exponential noise</strong> to each logit and take the argmax. This is the <strong>Report-Noisy-Max (RNM)</strong> mechanism.</p>
@@ -1517,49 +1453,51 @@ body::after {
           where &nbsp;<b>λ = 2Δ/ε = 4C/(B · ε)</b>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;">
-          <span class="tag tag-gold">RNM</span>
-          <span class="tag tag-gold">Exponential noise</span>
-          <span class="tag tag-em">ε-DP</span>
-          <span class="tag tag-mute">DClip sensitivity</span>
+          <span class="tag tag-g">RNM</span>
+          <span class="tag tag-g">Exponential noise</span>
+          <span class="tag tag-i">ε-DP</span>
+          <span class="tag tag-m">DClip sensitivity</span>
         </div>
       </div>
-      <div class="card solution-card card-vl">
+      <div class="card card-vl" style="padding:30px;">
         <div class="eyebrow">Built atop InvisibleInk · Vinod et al. 2025</div>
         <h3>A <em>drop-in</em> replacement</h3>
-        <p><strong>DClip</strong> &mdash; clips only the difference between private and public logits, reducing sensitivity to Δ = 2C/B while preserving distributional structure.</p>
-        <p><strong>Top-k⁺ decoding</strong> &mdash; restricts sampling to a safe subset derived from public logits, avoiding the unreliable vocabulary tail.</p>
+        <p><strong>DClip</strong> — clips only the difference between private and public logits, reducing sensitivity to Δ = 2C/B while preserving distributional structure.</p>
+        <p><strong>Top-k⁺ decoding</strong> — restricts sampling to a safe subset derived from public logits, avoiding the unreliable vocabulary tail.</p>
         <p>We keep both innovations and <em>swap only the final sampling step</em>: Gumbel-Max → RNM-Exponential. <strong>Same ε</strong>. <strong>Same framework</strong>. Strictly better utility by Theorem 3.</p>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;">
-          <span class="tag tag-mute">DClip</span>
-          <span class="tag tag-mute">Top-k⁺</span>
-          <span class="tag tag-gold">Drop-in replacement</span>
+          <span class="tag tag-m">DClip</span>
+          <span class="tag tag-m">Top-k⁺</span>
+          <span class="tag tag-g">Drop-in replacement</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ╔═══ §3 — INTUITION + COIN-FLIP LAB ═══╗ -->
+<!-- §3 INTUITION -->
 <section class="scene" id="sec-3">
   <div class="page">
     <header class="head reveal">
-      <div class="head-left">
+      <div>
         <div class="head-meta">
-          <span class="chap-num">III.</span>
+          <span class="chap-num">§ 03</span>
           <span class="chap-rule"></span>
           <span>The intuition</span>
         </div>
-        <h1>Two algorithms, <em>one coin</em>, <span class="ampersand">&</span> very different fates</h1>
+        <h1>Sampling <em>with</em> <span class="amp">vs</span> <em>without</em> replacement</h1>
       </div>
       <div class="head-right">Section 03 / 07<br>Live simulation</div>
     </header>
 
     <div class="intuition-bar reveal">
       <div class="lede">
-        Both mechanisms can be expressed as biased coin flips. <b>The only difference is whether rejected tokens go back in the pool</b> — this single change is what gives RNM-Exponential its provable advantage.
+        <div>
+          <b>Key insight:</b> Both mechanisms work like biased coin flips. The only difference is whether rejected tokens go back into the pool — and that single change is what gives RNM-Exponential its provable advantage.
+        </div>
       </div>
       <div class="controls">
-        <button class="reset-btn" id="reset-btn" onclick="simReset()">↺ Reset</button>
+        <button class="reset-btn" onclick="simReset()">↺ Reset</button>
         <button class="run-btn" id="sim-btn" onclick="simRun()">
           <svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5v9l8-4.5z"/></svg>
           Run trial
@@ -1569,88 +1507,88 @@ body::after {
 
     <div class="lab reveal">
       <div class="lab-head">
-        <div class="eyebrow">The Permute-and-Flip equivalence</div>
-        <h3>With replacement <em>·</em> Without replacement</h3>
+        <div class="lh-eyebrow">The Permute-and-Flip equivalence</div>
+        <h3>Both are coin-flip processes — <em>replacement is the difference</em></h3>
       </div>
       <div class="lab-stage">
 
         <!-- LEFT: Softmax / EM -->
         <div class="lab-side">
-          <div class="lab-title ox">
-            <span>Softmax · Exponential Mechanism</span>
+          <div class="lab-title r">
+            <span>Softmax · Gumbel-Max</span>
             <span class="pill">with replacement</span>
           </div>
           <div class="pool" id="pool-sm">
-            <div class="tok t-hi" data-i="0"><div class="tok-circle">T₁</div><div class="tok-prob">.40</div><div class="tok-bar" style="width:40%"></div></div>
-            <div class="tok t-hi" data-i="1"><div class="tok-circle">T₂</div><div class="tok-prob">.28</div><div class="tok-bar" style="width:28%"></div></div>
-            <div class="tok t-mid" data-i="2"><div class="tok-circle">T₃</div><div class="tok-prob">.16</div><div class="tok-bar" style="width:16%"></div></div>
-            <div class="tok t-lo" data-i="3"><div class="tok-circle">T₄</div><div class="tok-prob">.09</div><div class="tok-bar" style="width:9%"></div></div>
-            <div class="tok t-lo" data-i="4"><div class="tok-circle">T₅</div><div class="tok-prob">.07</div><div class="tok-bar" style="width:7%"></div></div>
+            <div class="tok t-hi" data-i="0"><div class="tok-c">T₁</div><div class="tok-p">.40</div><div class="tok-bar" style="width:40%"></div></div>
+            <div class="tok t-hi" data-i="1"><div class="tok-c">T₂</div><div class="tok-p">.28</div><div class="tok-bar" style="width:28%"></div></div>
+            <div class="tok t-mid" data-i="2"><div class="tok-c">T₃</div><div class="tok-p">.16</div><div class="tok-bar" style="width:16%"></div></div>
+            <div class="tok t-lo" data-i="3"><div class="tok-c">T₄</div><div class="tok-p">.09</div><div class="tok-bar" style="width:9%"></div></div>
+            <div class="tok t-lo" data-i="4"><div class="tok-c">T₅</div><div class="tok-p">.07</div><div class="tok-bar" style="width:7%"></div></div>
           </div>
           <p class="algo-step" id="step-sm">Sample categorically from p ∝ exp(ε · q / 2Δ). One draw, with replacement — every token is eligible <em>every time</em>.</p>
           <div class="coin-stage">
-            <div class="cs-label">Coin</div>
+            <div class="cs-l">Coin</div>
             <div class="coin" id="coin-sm"></div>
-            <div class="cs-label" style="margin-left:auto;text-align:right;width:auto;" id="coin-sm-result"></div>
+            <div class="coin-result" id="result-sm"></div>
           </div>
           <div class="stats-panel">
-            <div class="sp-row"><span class="sp-label">Trials</span><span class="sp-val" id="sm-trials">0</span></div>
-            <div class="sp-row"><span class="sp-label">Tail picks</span><span class="sp-val ox" id="sm-tail">0</span></div>
-            <div class="sp-row"><span class="sp-label">Head picks</span><span class="sp-val em" id="sm-head">0</span></div>
-            <div class="sp-row"><span class="sp-label">Quality</span><span class="sp-val gold" id="sm-quality">—</span></div>
+            <div class="sp-row"><span class="sp-l">Trials</span><span class="sp-v" id="sm-trials">0</span></div>
+            <div class="sp-row"><span class="sp-l">Tail picks</span><span class="sp-v rd" id="sm-tail">0</span></div>
+            <div class="sp-row"><span class="sp-l">Head picks</span><span class="sp-v gn" id="sm-head">0</span></div>
+            <div class="sp-row"><span class="sp-l">Avg score</span><span class="sp-v gd" id="sm-quality">—</span></div>
           </div>
-          <div class="verdict bad">Tail tokens persist · low-quality outputs recur · garbage in the chain.</div>
+          <div class="verdict bad">Tail tokens persist · bad choices recur · quality degrades</div>
         </div>
 
         <!-- DIVIDER -->
-        <div class="lab-divider"><span class="vs">vs.</span></div>
+        <div class="lab-divider"><span>vs</span></div>
 
-        <!-- RIGHT: RNM-Exp / PF -->
+        <!-- RIGHT: RNM / PF -->
         <div class="lab-side">
-          <div class="lab-title em">
+          <div class="lab-title g">
             <span>RNM-Exp · Permute-and-Flip</span>
             <span class="pill">without replacement</span>
           </div>
           <div class="pool" id="pool-rnm">
-            <div class="tok t-hi" data-i="0"><div class="tok-circle">T₁</div><div class="tok-prob">.40</div><div class="tok-bar" style="width:40%"></div></div>
-            <div class="tok t-hi" data-i="1"><div class="tok-circle">T₂</div><div class="tok-prob">.28</div><div class="tok-bar" style="width:28%"></div></div>
-            <div class="tok t-mid" data-i="2"><div class="tok-circle">T₃</div><div class="tok-prob">.16</div><div class="tok-bar" style="width:16%"></div></div>
-            <div class="tok t-lo" data-i="3"><div class="tok-circle">T₄</div><div class="tok-prob">.09</div><div class="tok-bar" style="width:9%"></div></div>
-            <div class="tok t-lo" data-i="4"><div class="tok-circle">T₅</div><div class="tok-prob">.07</div><div class="tok-bar" style="width:7%"></div></div>
+            <div class="tok t-hi" data-i="0"><div class="tok-c">T₁</div><div class="tok-p">.40</div><div class="tok-bar" style="width:40%"></div></div>
+            <div class="tok t-hi" data-i="1"><div class="tok-c">T₂</div><div class="tok-p">.28</div><div class="tok-bar" style="width:28%"></div></div>
+            <div class="tok t-mid" data-i="2"><div class="tok-c">T₃</div><div class="tok-p">.16</div><div class="tok-bar" style="width:16%"></div></div>
+            <div class="tok t-lo" data-i="3"><div class="tok-c">T₄</div><div class="tok-p">.09</div><div class="tok-bar" style="width:9%"></div></div>
+            <div class="tok t-lo" data-i="4"><div class="tok-c">T₅</div><div class="tok-p">.07</div><div class="tok-bar" style="width:7%"></div></div>
           </div>
           <p class="algo-step" id="step-rnm">Permute uniformly. Walk the order; flip a biased coin per token with p<sub>i</sub> = exp(−ε(q*−q<sub>i</sub>)/2Δ). <em>Heads → return.</em> <em>Tails → eliminate.</em></p>
           <div class="coin-stage">
-            <div class="cs-label">Coin</div>
+            <div class="cs-l">Coin</div>
             <div class="coin" id="coin-rnm"></div>
-            <div class="cs-label" style="margin-left:auto;text-align:right;width:auto;" id="coin-rnm-result"></div>
+            <div class="coin-result" id="result-rnm"></div>
           </div>
           <div class="stats-panel">
-            <div class="sp-row"><span class="sp-label">Trials</span><span class="sp-val" id="rnm-trials">0</span></div>
-            <div class="sp-row"><span class="sp-label">Tail picks</span><span class="sp-val ox" id="rnm-tail">0</span></div>
-            <div class="sp-row"><span class="sp-label">Head picks</span><span class="sp-val em" id="rnm-head">0</span></div>
-            <div class="sp-row"><span class="sp-label">Quality</span><span class="sp-val gold" id="rnm-quality">—</span></div>
+            <div class="sp-row"><span class="sp-l">Trials</span><span class="sp-v" id="rnm-trials">0</span></div>
+            <div class="sp-row"><span class="sp-l">Tail picks</span><span class="sp-v rd" id="rnm-tail">0</span></div>
+            <div class="sp-row"><span class="sp-l">Head picks</span><span class="sp-v gn" id="rnm-head">0</span></div>
+            <div class="sp-row"><span class="sp-l">Avg score</span><span class="sp-v gd" id="rnm-quality">—</span></div>
           </div>
-          <div class="verdict good">Tail tokens eliminated · head tokens win · quality preserved.</div>
+          <div class="verdict good">Tail tokens eliminated · head tokens win · quality preserved</div>
         </div>
       </div>
       <div class="lab-foot">
         <span class="trials">Total trials: <b id="total-trials">0</b></span>
         <div class="aggregated">
-          <div class="agg-cell ox"><span class="agg-num" id="agg-sm-q">—</span><span>SM avg score</span></div>
-          <div class="agg-cell em"><span class="agg-num" id="agg-rnm-q">—</span><span>RNM avg score</span></div>
+          <div class="agg-cell r"><span class="agg-num" id="agg-sm-q">—</span><span>SM avg</span></div>
+          <div class="agg-cell g"><span class="agg-num" id="agg-rnm-q">—</span><span>RNM avg</span></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ╔═══ §4 — MATH ═══╗ -->
+<!-- §4 MATH -->
 <section class="scene" id="sec-4">
   <div class="page">
     <header class="head reveal">
-      <div class="head-left">
+      <div>
         <div class="head-meta">
-          <span class="chap-num">IV.</span>
+          <span class="chap-num">§ 04</span>
           <span class="chap-rule"></span>
           <span>Mathematical foundation</span>
         </div>
@@ -1658,45 +1596,39 @@ body::after {
       </div>
       <div class="head-right">Section 04 / 07<br>Theory</div>
     </header>
-    <div class="g-3 reveal">
-      <div class="thm card-hl card-hl-em">
-        <div class="thm-num">Theorem I · Equivalence</div>
+    <div class="g3 reveal">
+      <div class="thm card-hl card-hl-g">
+        <div class="thm-l">Theorem 1 · Equivalence</div>
         <h4>RNM-Exp <em>≡</em> Permute-and-Flip</h4>
         <p>Ding et al. (2021) proved that adding i.i.d. Exponential noise to scores and taking the argmax produces <strong>exactly the same output distribution</strong> as the Permute-and-Flip mechanism.</p>
-        <div class="formula" style="font-size:13px;">
-          argmax<sub>i</sub> (q<sub>i</sub> + Exp(λ)) ∼ <b>PF(q)</b>
-        </div>
+        <div class="formula" style="font-size:12px;">argmax<sub>i</sub> (q<sub>i</sub> + Exp(λ)) ∼ <b>PF(q)</b></div>
         <p>This lets us implement the simple RNM rule while inheriting all of PF's utility guarantees — including its known dominance over the Exponential Mechanism.</p>
       </div>
-      <div class="thm card-hl card-hl-in">
-        <div class="thm-num">Theorem II · Privacy</div>
+      <div class="thm card-hl card-hl-i">
+        <div class="thm-l">Theorem 2 · Privacy</div>
         <h4>Strict <em>ε-DP</em> under DClip</h4>
         <p>With DClip sensitivity Δ = 2C/B, calibrating the Exponential noise scale to λ = 2Δ/ε guarantees <strong>pure ε-differential privacy</strong>.</p>
-        <div class="formula" style="font-size:13px;">
-          <b>λ = 4C / (B · ε)</b>
-        </div>
+        <div class="formula" style="font-size:12px;"><b>λ = 4C / (B · ε)</b></div>
         <p>The proof follows a change-of-variables argument on the RNM probability integral, showing the likelihood ratio across adjacent datasets is bounded by e<sup>ε</sup>.</p>
       </div>
-      <div class="thm card-hl card-hl-gold">
-        <div class="thm-num">Theorem III · Utility</div>
+      <div class="thm card-hl card-hl-o">
+        <div class="thm-l">Theorem 3 · Utility</div>
         <h4>PF dominates EM <em>up to 2×</em></h4>
         <p>For any privacy budget ε and any score distribution, the expected error of PF/RNM-Exp is <strong>always ≤</strong> the expected error of the Exponential Mechanism.</p>
-        <div class="formula" style="font-size:13px;">
-          <b>𝔼[E<sub>PF</sub>] ≤ 𝔼[E<sub>EM</sub>]</b> &nbsp;∀ ε, q
-        </div>
+        <div class="formula" style="font-size:12px;"><b>𝔼[E<sub>PF</sub>] ≤ 𝔼[E<sub>EM</sub>]</b> &nbsp;∀ ε, q</div>
         <p>In the asymptotic limit, the error ratio converges exactly to 2 — PF is <em>twice as accurate</em> as EM under the same privacy budget.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ╔═══ §5 — SIMULATION ═══╗ -->
+<!-- §5 SIMULATION -->
 <section class="scene" id="sec-5">
   <div class="page">
     <header class="head reveal">
-      <div class="head-left">
+      <div>
         <div class="head-meta">
-          <span class="chap-num">V.</span>
+          <span class="chap-num">§ 05</span>
           <span class="chap-rule"></span>
           <span>Toy simulation</span>
         </div>
@@ -1704,57 +1636,57 @@ body::after {
       </div>
       <div class="head-right">Section 05 / 07<br>20,000 trials · ε = 2.0</div>
     </header>
-    <div class="g-2 reveal">
+    <div class="g2 reveal" style="margin-bottom:1px;">
       <div class="plot">
         <div class="plot-h">Empirical · 20k trials</div>
-        <div class="plot-h-title">Selection probability vs. token rank</div>
+        <div class="plot-t">Selection probability vs. token rank</div>
         <canvas id="chart-prob"></canvas>
       </div>
       <div class="plot">
         <div class="plot-h">Closed form · n=5, ε=1, Δ=1</div>
-        <div class="plot-h-title">Expected error vs. p</div>
+        <div class="plot-t">Expected error vs. p</div>
         <canvas id="chart-error"></canvas>
       </div>
     </div>
-    <div class="reveal" style="margin-top:1px;">
+    <div class="reveal" style="margin-bottom:1px;">
       <div class="plot plot-sm">
         <div class="plot-h">Asymptotic comparison</div>
-        <div class="plot-h-title">Worst-case expected error vs. vocabulary size n</div>
+        <div class="plot-t">Worst-case expected error vs. vocabulary size n</div>
         <canvas id="chart-scale"></canvas>
       </div>
     </div>
-    <div class="g-4 reveal" style="margin-top:1px;">
-      <div class="finding">
-        <div class="finding-num">i.</div>
+    <div class="g4 reveal">
+      <div class="finding" style="--fl:var(--green); --fl-bg:rgba(110,231,183,.1);">
+        <div class="finding-num">i</div>
         <div class="fl">Equivalence verified</div>
         <p>Softmax ≡ Gumbel-Max. RNM-Exp ≡ Permute-and-Flip. Both match exactly across 20,000 trials.</p>
       </div>
-      <div class="finding f-em">
-        <div class="finding-num">ii.</div>
+      <div class="finding" style="--fl:#4ade80; --fl-bg:rgba(74,222,128,.1);">
+        <div class="finding-num">ii</div>
         <div class="fl">Utility gap</div>
-        <p>PF / RNM consistently selects higher-scoring tokens. The gap widens as the privacy budget tightens.</p>
+        <p>PF/RNM consistently selects higher-scoring tokens. Gap widens as privacy budget tightens.</p>
       </div>
-      <div class="finding f-in">
-        <div class="finding-num">iii.</div>
+      <div class="finding" style="--fl:var(--indigo); --fl-bg:rgba(129,140,248,.1);">
+        <div class="finding-num">iii</div>
         <div class="fl">Tail suppression</div>
         <p>Softmax gives persistent mass to tail tokens. PF aggressively truncates — low-ranked tokens approach zero.</p>
       </div>
-      <div class="finding f-ox">
-        <div class="finding-num">iv.</div>
+      <div class="finding" style="--fl:var(--orange); --fl-bg:rgba(251,146,60,.1);">
+        <div class="finding-num">iv</div>
         <div class="fl">2× error reduction</div>
-        <p>PF error ≤ EM error across all vocab sizes. Ratio converges to exactly 2 as p → 0, validating Theorem III.</p>
+        <p>PF error ≤ EM error across all vocab sizes. Ratio converges to exactly 2 as p → 0, validating Thm. 3.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ╔═══ §6 — RESULTS ═══╗ -->
+<!-- §6 RESULTS -->
 <section class="scene" id="sec-6">
   <div class="page">
     <header class="head reveal">
-      <div class="head-left">
+      <div>
         <div class="head-meta">
-          <span class="chap-num">VI.</span>
+          <span class="chap-num">§ 06</span>
           <span class="chap-rule"></span>
           <span>Real-data results</span>
         </div>
@@ -1763,23 +1695,23 @@ body::after {
       <div class="head-right">Section 06 / 07<br>TAB · Yelp · PubMed</div>
     </header>
 
-    <div class="results-control reveal">
-      <div class="dataset-tabs">
-        <button class="ds-tab active" onclick="switchDS('tab',this)">TAB</button>
-        <button class="ds-tab" onclick="switchDS('yelp',this)">Yelp</button>
-        <button class="ds-tab" onclick="switchDS('pubmed',this)">PubMed</button>
+    <div class="res-control reveal">
+      <div class="dtabs">
+        <button class="dtab active" onclick="switchDS('tab',this)">TAB</button>
+        <button class="dtab" onclick="switchDS('yelp',this)">Yelp</button>
+        <button class="dtab" onclick="switchDS('pubmed',this)">PubMed</button>
       </div>
-      <button class="samples-link" onclick="popOpen()">
+      <button class="samples-btn" onclick="popOpen()">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
           <rect x="3" y="3" width="14" height="14" rx="1.5"/>
           <path d="M6 8h8M6 11h6M6 14h4"/>
         </svg>
-        Read generated samples
+        View text samples
       </button>
     </div>
 
     <div class="dpanel active reveal" id="dp-tab">
-      <div class="results-layout">
+      <div class="res-layout">
         <div class="eps-stack">
           <div class="eyebrow">Select ε</div>
           <button class="eps-btn active" onclick="switchEps('tab',0,this)"><span class="ev">ε₁</span><span class="el">low privacy · most noise</span></button>
@@ -1795,7 +1727,7 @@ body::after {
       </div>
     </div>
     <div class="dpanel reveal" id="dp-yelp">
-      <div class="results-layout">
+      <div class="res-layout">
         <div class="eps-stack">
           <div class="eyebrow">Select ε</div>
           <button class="eps-btn active" onclick="switchEps('yelp',0,this)"><span class="ev">ε₁</span><span class="el">low privacy</span></button>
@@ -1811,7 +1743,7 @@ body::after {
       </div>
     </div>
     <div class="dpanel reveal" id="dp-pubmed">
-      <div class="results-layout">
+      <div class="res-layout">
         <div class="eps-stack">
           <div class="eyebrow">Select ε</div>
           <button class="eps-btn active" onclick="switchEps('pubmed',0,this)"><span class="ev">ε₁</span><span class="el">low privacy</span></button>
@@ -1827,19 +1759,19 @@ body::after {
       </div>
     </div>
 
-    <div class="author-note reveal">
-      <b>Placeholder data shown.</b> Replace <code>RD</code> and <code>SD</code> in the script with your final experimental results. Charts regenerate automatically on selection.
+    <div class="note reveal">
+      <strong>Placeholder data shown.</strong> Replace <code>RD</code> and <code>SD</code> in the script with your actual experimental results. Charts regenerate automatically on selection.
     </div>
   </div>
 </section>
 
-<!-- ╔═══ §7 — ROAD AHEAD ═══╗ -->
+<!-- §7 ROAD AHEAD -->
 <section class="scene" id="sec-7">
   <div class="page">
     <header class="head reveal">
-      <div class="head-left">
+      <div>
         <div class="head-meta">
-          <span class="chap-num">VII.</span>
+          <span class="chap-num">§ 07</span>
           <span class="chap-rule"></span>
           <span>The road ahead</span>
         </div>
@@ -1847,68 +1779,67 @@ body::after {
       </div>
       <div class="head-right">Section 07 / 07<br>Completion plan</div>
     </header>
-    <div class="g-2 reveal" style="margin-bottom:36px;">
-      <div class="fc card-hl card-hl-em">
-        <span class="fc-step">i.</span>
+    <div class="g2 reveal" style="margin-bottom:28px;">
+      <div class="fc card-hl card-hl-g">
+        <span class="fc-step">01</span>
         <span class="fc-status done">Complete</span>
         <h3>Theory <em>&</em> simulation</h3>
         <p>Proved ε-DP guarantee, established PF equivalence, derived utility bounds, ran 20,000-trial toy simulations confirming all theoretical claims including the 2× error reduction limit.</p>
       </div>
-      <div class="fc card-hl card-hl-gold">
-        <span class="fc-step">ii.</span>
+      <div class="fc card-hl card-hl-i">
+        <span class="fc-step">02</span>
         <span class="fc-status prog">In progress</span>
         <h3>Real-data <em>evaluation</em></h3>
         <p>Running RNM-Exponential and Softmax on TAB, Yelp, and PubMed at three ε values. Collecting PPL, BERTScore, MAUVE, Rep-3, and TTR for both mechanisms.</p>
       </div>
-      <div class="fc card-hl card-hl-gold">
-        <span class="fc-step">iii.</span>
+      <div class="fc card-hl card-hl-i">
+        <span class="fc-step">03</span>
         <span class="fc-status prog">In progress</span>
         <h3>InvisibleInk <em>integration</em></h3>
         <p>Reproducing the exact experimental setup from Vinod et al. (2025) — same datasets, parameters, and comparison table — with RNM-Exp as a new row.</p>
       </div>
-      <div class="fc card-hl card-hl-in">
-        <span class="fc-step">iv.</span>
+      <div class="fc card-hl card-hl-o">
+        <span class="fc-step">04</span>
         <span class="fc-status plan">If needed</span>
         <h3>Loss-function <em>alignment</em></h3>
         <p>If RNM-Exp underperforms despite theoretical superiority, we'll design a numerically stable loss function under Exponential noise scaling 𝒪(|V|) with vocabulary size.</p>
       </div>
     </div>
-
     <div class="colophon reveal">
-      <div class="colophon-block">
+      <div>
         <div class="eyebrow">The team</div>
         <div class="team">
-          <div class="team-member">
+          <div class="team-mem">
             <div class="roll">DA24B016</div>
             <div class="name">M. M. Pruthvi Raj</div>
           </div>
-          <div class="team-member">
+          <div class="team-mem">
             <div class="roll">DA24B028</div>
             <div class="name">Aakash Aadhithya</div>
           </div>
-          <div class="team-member">
+          <div class="team-mem">
             <div class="roll">DA24B050</div>
             <div class="name">Rishikesh V</div>
           </div>
         </div>
       </div>
-      <div class="colophon-block">
+      <div>
         <div class="eyebrow">Key references</div>
         <div class="refs">
           <div class="ref-item">
-            <div class="num">i.</div>
+            <div class="num">1.</div>
             <div>Vinod, Pillutla &amp; Thakurta. <em>InvisibleInk: High-Utility and Low-Cost Differentially Private Decoding</em>. arXiv:2507.02974, 2025.</div>
           </div>
           <div class="ref-item">
-            <div class="num">ii.</div>
+            <div class="num">2.</div>
             <div>McKenna &amp; Sheldon. <em>Permute-and-Flip: A New Mechanism for Differentially Private Selection</em>. NeurIPS 2020.</div>
           </div>
           <div class="ref-item">
-            <div class="num">iii.</div>
-            <div>Ding et al. <em>The Permute-and-Flip mechanism is identical to Report-Noisy-Max with Exponential noise</em>. arXiv:2105.07260, 2021.</div>
+            <div class="num">3.</div>
+            <div>Ding et al. <em>Permute-and-Flip ≡ Report-Noisy-Max with Exponential noise</em>. arXiv:2105.07260, 2021.</div>
           </div>
           <div class="ref-item">
-            <div class="num">iv.</div>
+            <div class="num">4.</div>
             <div>Zhao, Li &amp; Wang. <em>Optimal stable decoder under privacy constraints</em>. ICLR 2025.</div>
           </div>
         </div>
@@ -1919,80 +1850,75 @@ body::after {
 
 </main>
 
-<!-- ════════ FOOT ════════ -->
-<footer class="foot">
-  <div class="foot-section">
-    <span class="fs-num" id="foot-num">§ 00</span>
-    <span id="foot-name">Front Matter</span>
-  </div>
-  <div class="foot-controls">
-    <button class="foot-btn" id="btn-prev" onclick="navigate(-1)" disabled>
-      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2L3 6l5 4" stroke-linecap="round"/></svg>
+<!-- ════════ BOTTOM NAV — centered ════════ -->
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <button class="nav-btn home" id="btn-home" onclick="goTo(0)" title="Home">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M3 10L10 3l7 7"/><path d="M7 19v-6h6v6"/>
+      </svg>
+    </button>
+    <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 16l-5-6 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Prev
     </button>
-    <div class="foot-counter"><b id="cnt-cur">01</b><span>/</span><span id="cnt-tot">08</span></div>
-    <button class="foot-btn" id="btn-next" onclick="navigate(1)">
+    <div class="nav-section">
+      <span class="ns-num" id="ns-num">§ 00</span>
+      <span class="ns-name" id="ns-name">Front matter</span>
+      <span class="ns-counter"><b id="ns-cur">01</b> / <span id="ns-tot">08</span></span>
+    </div>
+    <div class="nav-progress-mini" id="nav-pips"></div>
+    <button class="nav-btn" id="btn-next" onclick="navigate(1)">
       Next
-      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2l5 4-5 4" stroke-linecap="round"/></svg>
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4l5 6-5 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
-</footer>
+</nav>
 
 <script>
 'use strict';
 
 /* ════════════════════════════════════════════
-   STATE
+   SECTIONS
 ═════════════════════════════════════════════ */
 const SECTIONS = [
-  { num:'§ 00', name:'Front Matter',  rail:'Front Matter' },
-  { num:'§ 01', name:'The Problem',   rail:'Problem' },
-  { num:'§ 02', name:'Our Solution',  rail:'Solution' },
-  { num:'§ 03', name:'The Intuition', rail:'Intuition' },
-  { num:'§ 04', name:'Mathematics',   rail:'Mathematics' },
-  { num:'§ 05', name:'Simulation',    rail:'Simulation' },
-  { num:'§ 06', name:'Results',       rail:'Results' },
-  { num:'§ 07', name:'Road Ahead',    rail:'Road Ahead' },
+  { num:'§ 00', name:'Front matter' },
+  { num:'§ 01', name:'The problem' },
+  { num:'§ 02', name:'Our solution' },
+  { num:'§ 03', name:'The intuition' },
+  { num:'§ 04', name:'Mathematics' },
+  { num:'§ 05', name:'Simulation' },
+  { num:'§ 06', name:'Results' },
+  { num:'§ 07', name:'Road ahead' },
 ];
 const TOTAL = SECTIONS.length;
 let cur = 0;
 let busy = false;
 let simBuilt = false;
 
-/* ════════════════════════════════════════════
-   RAIL
-═════════════════════════════════════════════ */
-const railEl = document.getElementById('rail');
+/* Pips */
+const pipsEl = document.getElementById('nav-pips');
 SECTIONS.forEach((s, i) => {
-  const item = document.createElement('div');
-  item.className = 'rail-item' + (i === 0 ? ' active' : '');
-  item.innerHTML = `
-    <span class="rail-name">${s.rail}</span>
-    <span class="rail-num">${String(i+1).padStart(2,'0')}.</span>
-    <span class="rail-tick"></span>
-  `;
-  item.onclick = () => goTo(i);
-  railEl.appendChild(item);
+  const p = document.createElement('div');
+  p.className = 'nav-pip' + (i === 0 ? ' active' : '');
+  p.title = s.name;
+  p.onclick = () => goTo(i);
+  pipsEl.appendChild(p);
 });
 
-/* ════════════════════════════════════════════
-   NAVIGATION
-═════════════════════════════════════════════ */
 function updateChrome() {
-  // foot
-  document.getElementById('foot-num').textContent  = SECTIONS[cur].num;
-  document.getElementById('foot-name').textContent = SECTIONS[cur].name;
-  document.getElementById('cnt-cur').textContent   = String(cur + 1).padStart(2,'0');
-  document.getElementById('cnt-tot').textContent   = String(TOTAL).padStart(2,'0');
+  document.getElementById('ns-num').textContent  = SECTIONS[cur].num;
+  document.getElementById('ns-name').textContent = SECTIONS[cur].name;
+  document.getElementById('ns-cur').textContent  = String(cur + 1).padStart(2,'0');
+  document.getElementById('ns-tot').textContent  = String(TOTAL).padStart(2,'0');
   document.getElementById('btn-prev').disabled = cur === 0;
   document.getElementById('btn-next').disabled = cur === TOTAL - 1;
-  // rail
-  document.querySelectorAll('.rail-item').forEach((el, i) => {
+  document.querySelectorAll('.nav-pip').forEach((el, i) => {
     el.classList.toggle('active', i === cur);
   });
-  // progress bar
+  // progress bar in topbar
   const pct = ((cur + 1) / TOTAL) * 100;
-  document.getElementById('masthead').style.setProperty('--prog', pct + '%');
+  document.getElementById('topbar').style.setProperty('--prog', pct + '%');
 }
 
 function goTo(n) {
@@ -2003,15 +1929,12 @@ function goTo(n) {
   const leaving  = document.getElementById('sec-' + cur);
   const entering = document.getElementById('sec-' + n);
 
-  // Phase 1: leave
   leaving.classList.add('leaving');
   leaving.classList.remove('active');
 
-  // Phase 2: prep entering
   entering.classList.add('entering');
   entering.scrollTop = 0;
 
-  // After leave finishes, activate entering
   setTimeout(() => {
     leaving.classList.remove('leaving');
     cur = n;
@@ -2019,7 +1942,6 @@ function goTo(n) {
     entering.classList.remove('entering');
     entering.classList.add('active');
 
-    // Lazy init
     if (cur === 5 && !simBuilt) {
       buildSimCharts();
       simBuilt = true;
@@ -2028,8 +1950,8 @@ function goTo(n) {
       setTimeout(() => renderDatasetCharts(activeDS, activeEps[activeDS]), 80);
     }
 
-    setTimeout(() => { busy = false; }, 400);
-  }, 350);
+    setTimeout(() => { busy = false; }, 350);
+  }, 320);
 }
 
 function navigate(dir) { goTo(cur + dir); }
@@ -2049,30 +1971,24 @@ updateChrome();
 
 /* ════════════════════════════════════════════
    COIN-FLIP LAB — accurate Permute-and-Flip
-   ════════════════════════════════════════════
-   Token scores (q_i — public logits, descending):
-     q = [4.0, 3.5, 2.8, 2.2, 1.9]
-   Display probabilities (softmax-normalized, τ=1):
-     p_softmax ≈ [.40, .28, .16, .09, .07]
-   PF coin probs  (relative to max q*=4):
-     c_i = exp(-(q* - q_i))   // assuming ε/(2Δ)=1 for the demo
-       = [1.000, 0.607, 0.301, 0.165, 0.122]
 ═════════════════════════════════════════════ */
-const SCORES = [4.0, 3.5, 2.8, 2.2, 1.9];
-const Q_STAR = Math.max(...SCORES);
+const SCORES   = [4.0, 3.5, 2.8, 2.2, 1.9];
+const Q_STAR   = Math.max(...SCORES);
 const P_SOFT = (() => {
   const e = SCORES.map(q => Math.exp(q));
-  const Z = e.reduce((a,b)=>a+b, 0);
-  return e.map(v => v/Z);
+  const Z = e.reduce((a,b) => a + b, 0);
+  return e.map(v => v / Z);
 })();
-const COIN_PROB = SCORES.map(q => Math.exp(-(Q_STAR - q)));  // ε=1, Δ=0.5
+const COIN_PROB = SCORES.map(q => Math.exp(-(Q_STAR - q)));
 const TOK_NAMES = ['T₁','T₂','T₃','T₄','T₅'];
 
 const stats = {
-  sm:  { trials:0, head:0, tail:0, sum:0 },
-  rnm: { trials:0, head:0, tail:0, sum:0 },
+  sm:  { trials: 0, head: 0, tail: 0, sum: 0 },
+  rnm: { trials: 0, head: 0, tail: 0, sum: 0 },
 };
 let simBusy = false;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function sampleCategorical(probs) {
   const r = Math.random();
@@ -2095,13 +2011,13 @@ function shuffle(arr) {
 
 function setCoin(id, state) {
   const c = document.getElementById(id);
-  c.classList.remove('heads','tails','flipping');
+  c.classList.remove('heads', 'tails', 'flipping');
   if (state === null) return;
   c.classList.add('flipping');
   setTimeout(() => {
     c.classList.remove('flipping');
     c.classList.add(state);
-  }, 270);
+  }, 250);
 }
 
 function setStep(side, html) {
@@ -2109,26 +2025,23 @@ function setStep(side, html) {
 }
 
 function setResult(side, html) {
-  document.getElementById('coin-' + side + '-result').innerHTML = html;
+  document.getElementById('result-' + side).innerHTML = html;
 }
 
 function clearPool(side) {
-  const pool = document.getElementById('pool-' + side);
-  pool.querySelectorAll('.tok').forEach(t => {
+  document.querySelectorAll('#pool-' + side + ' .tok').forEach(t => {
     t.classList.remove('eliminated', 'testing', 'winner');
   });
 }
 
 function highlightToken(side, idx, cls) {
-  const pool = document.getElementById('pool-' + side);
-  const tok = pool.querySelector(`.tok[data-i="${idx}"]`);
-  tok.classList.add(cls);
+  const tok = document.querySelector('#pool-' + side + ' .tok[data-i="' + idx + '"]');
+  if (tok) tok.classList.add(cls);
 }
 
 function unhighlightToken(side, idx, cls) {
-  const pool = document.getElementById('pool-' + side);
-  const tok = pool.querySelector(`.tok[data-i="${idx}"]`);
-  tok.classList.remove(cls);
+  const tok = document.querySelector('#pool-' + side + ' .tok[data-i="' + idx + '"]');
+  if (tok) tok.classList.remove(cls);
 }
 
 function updateStatsUI() {
@@ -2141,44 +2054,42 @@ function updateStatsUI() {
   document.getElementById('rnm-tail').textContent   = rn.tail;
   document.getElementById('total-trials').textContent = Math.max(sm.trials, rn.trials);
   if (sm.trials > 0) {
-    const avgQ = sm.sum / sm.trials;
-    document.getElementById('sm-quality').textContent = avgQ.toFixed(2);
-    document.getElementById('agg-sm-q').textContent   = avgQ.toFixed(2);
+    const avg = (sm.sum / sm.trials).toFixed(2);
+    document.getElementById('sm-quality').textContent = avg;
+    document.getElementById('agg-sm-q').textContent   = avg;
   }
   if (rn.trials > 0) {
-    const avgQ = rn.sum / rn.trials;
-    document.getElementById('rnm-quality').textContent = avgQ.toFixed(2);
-    document.getElementById('agg-rnm-q').textContent   = avgQ.toFixed(2);
+    const avg = (rn.sum / rn.trials).toFixed(2);
+    document.getElementById('rnm-quality').textContent = avg;
+    document.getElementById('agg-rnm-q').textContent   = avg;
   }
 }
 
-/* ─── SOFTMAX simulation: single categorical draw ─── */
+/* ── SOFTMAX: single categorical draw ── */
 async function simSoftmax() {
   clearPool('sm');
   setStep('sm', 'Drawing one token from p ∝ exp(ε·q/2Δ) <em>with replacement</em>…');
   setResult('sm', '');
   setCoin('coin-sm', null);
+  await sleep(280);
 
-  await sleep(300);
-
-  // Animate "flipping" through tokens (visual only)
-  const visits = 3 + Math.floor(Math.random()*2);
+  // Animate "rolling" through tokens
+  const visits = 3 + Math.floor(Math.random() * 2);
   for (let v = 0; v < visits; v++) {
     const idx = Math.floor(Math.random() * 5);
     highlightToken('sm', idx, 'testing');
-    setCoin('coin-sm', null);
     document.getElementById('coin-sm').classList.add('flipping');
-    await sleep(220);
+    await sleep(200);
     document.getElementById('coin-sm').classList.remove('flipping');
     unhighlightToken('sm', idx, 'testing');
   }
 
-  // Actual draw
+  // Real draw
   const winner = sampleCategorical(P_SOFT);
   highlightToken('sm', winner, 'winner');
   setCoin('coin-sm', 'heads');
-  setResult('sm', `→ <span style="color:var(--gold)">${TOK_NAMES[winner]}</span>`);
-  setStep('sm', `Selected <em>${TOK_NAMES[winner]}</em> with score q = ${SCORES[winner].toFixed(1)}.`);
+  setResult('sm', '→ <span style="color:var(--green);font-weight:600;">' + TOK_NAMES[winner] + '</span>');
+  setStep('sm', 'Selected <em>' + TOK_NAMES[winner] + '</em> with score q = ' + SCORES[winner].toFixed(1) + '.');
 
   stats.sm.trials++;
   stats.sm.sum += SCORES[winner];
@@ -2186,36 +2097,34 @@ async function simSoftmax() {
   updateStatsUI();
 }
 
-/* ─── RNM-Exp / PF simulation: walk permutation, flip coins ─── */
+/* ── PF: walk permutation, flip coin per token ── */
 async function simPF() {
   clearPool('rnm');
   setStep('rnm', 'Permuting uniformly…');
   setResult('rnm', '');
   setCoin('coin-rnm', null);
-  await sleep(450);
+  await sleep(420);
 
   const order = shuffle([0,1,2,3,4]);
-  setStep('rnm', `Walking order <b>${order.map(i => TOK_NAMES[i]).join(' → ')}</b>`);
-  await sleep(550);
+  setStep('rnm', 'Walking order <b>' + order.map(i => TOK_NAMES[i]).join(' → ') + '</b>');
+  await sleep(520);
 
   for (let step = 0; step < order.length; step++) {
     const idx = order[step];
     const p = COIN_PROB[idx];
 
     highlightToken('rnm', idx, 'testing');
-    setStep('rnm', `Testing <b>${TOK_NAMES[idx]}</b> · coin probability <em>${p.toFixed(3)}</em>`);
-    setCoin('coin-rnm', null);
+    setStep('rnm', 'Testing <b>' + TOK_NAMES[idx] + '</b> · coin probability <em>' + p.toFixed(3) + '</em>');
     document.getElementById('coin-rnm').classList.add('flipping');
-    await sleep(380);
+    await sleep(360);
     document.getElementById('coin-rnm').classList.remove('flipping');
     unhighlightToken('rnm', idx, 'testing');
 
     if (Math.random() < p) {
-      // HEADS → return
       highlightToken('rnm', idx, 'winner');
       setCoin('coin-rnm', 'heads');
-      setResult('rnm', `→ <span style="color:var(--emerald)">${TOK_NAMES[idx]}</span>`);
-      setStep('rnm', `<b>Heads.</b> Returning <em>${TOK_NAMES[idx]}</em> with q = ${SCORES[idx].toFixed(1)}.`);
+      setResult('rnm', '→ <span style="color:var(--green);font-weight:600;">' + TOK_NAMES[idx] + '</span>');
+      setStep('rnm', '<b>Heads.</b> Returning <em>' + TOK_NAMES[idx] + '</em> with q = ' + SCORES[idx].toFixed(1) + '.');
 
       stats.rnm.trials++;
       stats.rnm.sum += SCORES[idx];
@@ -2223,17 +2132,12 @@ async function simPF() {
       updateStatsUI();
       return;
     } else {
-      // TAILS → eliminate
       highlightToken('rnm', idx, 'eliminated');
       setCoin('coin-rnm', 'tails');
-      await sleep(450);
+      await sleep(420);
     }
   }
-  // Fallback: last token guaranteed (probability 1 for max q*)
-  // — should not reach here given max prob = 1
 }
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function simRun() {
   if (simBusy) return;
@@ -2242,10 +2146,9 @@ async function simRun() {
   btn.disabled = true;
   btn.innerHTML = '<svg viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="3" opacity=".5"/></svg> Running…';
 
-  // Run both in parallel
   await Promise.all([simSoftmax(), simPF()]);
 
-  await sleep(700);
+  await sleep(650);
   btn.disabled = false;
   btn.innerHTML = '<svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5v9l8-4.5z"/></svg> Run again';
   simBusy = false;
@@ -2253,8 +2156,8 @@ async function simRun() {
 
 function simReset() {
   if (simBusy) return;
-  stats.sm  = { trials:0, head:0, tail:0, sum:0 };
-  stats.rnm = { trials:0, head:0, tail:0, sum:0 };
+  stats.sm  = { trials: 0, head: 0, tail: 0, sum: 0 };
+  stats.rnm = { trials: 0, head: 0, tail: 0, sum: 0 };
   clearPool('sm');
   clearPool('rnm');
   setCoin('coin-sm', null);
@@ -2275,41 +2178,37 @@ function simReset() {
 /* ════════════════════════════════════════════
    CHART HELPERS
 ═════════════════════════════════════════════ */
-Chart.defaults.color = '#8a8170';
-Chart.defaults.borderColor = 'rgba(214,194,154,.08)';
-Chart.defaults.font.family = "'JetBrains Mono', monospace";
-
-const COLORS = {
-  sm:  { bg: 'rgba(184,93,82,.18)',  border: '#b85d52' },
-  rnm: { bg: 'rgba(107,154,122,.18)', border: '#6b9a7a' },
-  gold: '#d4af6a',
-};
-
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = 'rgba(30,30,46,1)';
+Chart.defaults.font.family = "'DM Mono', monospace";
 const CI = {};
 
-const baseOpts = (smallTicks=false) => ({
+const COLORS = {
+  sm:  { bg: 'rgba(248,113,113,.22)', border: '#f87171' },
+  rnm: { bg: 'rgba(110,231,183,.18)', border: '#6ee7b7' },
+};
+
+const baseOpts = (small=false) => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
       labels: {
-        font: { family: "'JetBrains Mono'", size: smallTicks?9:10 },
-        color: '#8a8170',
+        font: { family: "'DM Mono'", size: small ? 9 : 10 },
+        color: '#64748b',
         boxWidth: 10,
-        padding: 12,
+        padding: 10,
       }
     }
   },
   scales: {
     x: {
-      ticks: { font: { family: "'JetBrains Mono'", size: smallTicks?8.5:9 }, color: '#5a5446' },
-      grid: { color: 'rgba(214,194,154,.05)' },
-      border: { color: 'rgba(214,194,154,.15)' },
+      ticks: { font: { family: "'DM Mono'", size: small ? 8.5 : 9 } },
+      grid: { color: 'rgba(30,30,46,.7)' }
     },
     y: {
-      ticks: { font: { family: "'JetBrains Mono'", size: smallTicks?8.5:9 }, color: '#5a5446' },
-      grid: { color: 'rgba(214,194,154,.05)' },
-      border: { color: 'rgba(214,194,154,.15)' },
+      ticks: { font: { family: "'DM Mono'", size: small ? 8.5 : 9 } },
+      grid: { color: 'rgba(30,30,46,.7)' }
     }
   }
 });
@@ -2323,12 +2222,12 @@ function mkBar(id, labels, smV, rnmV) {
     data: {
       labels,
       datasets: [
-        { label: 'Softmax',   data: smV,
+        { label: 'Softmax',  data: smV,
           backgroundColor: COLORS.sm.bg, borderColor: COLORS.sm.border,
-          borderWidth: 1.5, borderRadius: 1, barPercentage: .78 },
-        { label: 'RNM-Exp',  data: rnmV,
+          borderWidth: 1.5, borderRadius: 2, barPercentage: .76 },
+        { label: 'RNM-Exp', data: rnmV,
           backgroundColor: COLORS.rnm.bg, borderColor: COLORS.rnm.border,
-          borderWidth: 1.5, borderRadius: 1, barPercentage: .78 }
+          borderWidth: 1.5, borderRadius: 2, barPercentage: .76 }
       ]
     },
     options: baseOpts(true)
@@ -2336,10 +2235,10 @@ function mkBar(id, labels, smV, rnmV) {
 }
 
 /* ════════════════════════════════════════════
-   §5 — TOY SIMULATION CHARTS
+   §5 SIMULATION CHARTS
 ═════════════════════════════════════════════ */
 function buildSimCharts() {
-  const ranks = Array.from({length: 12}, (_, i) => 'T' + (i+1));
+  const ranks = Array.from({length: 12}, (_, i) => 'T' + (i + 1));
   const smP  = [0.41,0.22,0.12,0.08,0.06,0.04,0.02,0.015,0.01,0.008,0.005,0.003];
   const rnmP = [0.63,0.21,0.08,0.04,0.02,0.01,0.005,0.003,0.001,0.001,0.0005,0.0002];
 
@@ -2352,10 +2251,10 @@ function buildSimCharts() {
         datasets: [
           { label: 'Softmax (EM)',  data: smP,
             backgroundColor: COLORS.sm.bg, borderColor: COLORS.sm.border,
-            borderWidth: 1.5, borderRadius: 1 },
+            borderWidth: 1.5, borderRadius: 2 },
           { label: 'RNM-Exp (PF)', data: rnmP,
             backgroundColor: COLORS.rnm.bg, borderColor: COLORS.rnm.border,
-            borderWidth: 1.5, borderRadius: 1 }
+            borderWidth: 1.5, borderRadius: 2 }
         ]
       },
       options: baseOpts()
@@ -2363,8 +2262,8 @@ function buildSimCharts() {
   }
 
   const pVals = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9];
-  const emE = pVals.map(p => (4*p)/(1+4*p));
-  const pfE = pVals.map(p => 1 - (1-(1-p)**5)/(5*p));
+  const emE = pVals.map(p => (4 * p) / (1 + 4 * p));
+  const pfE = pVals.map(p => 1 - (1 - (1 - p) ** 5) / (5 * p));
   const ce = document.getElementById('chart-error');
   if (ce) {
     CI['ce'] = new Chart(ce, {
@@ -2374,14 +2273,12 @@ function buildSimCharts() {
         datasets: [
           { label: 'EM (Softmax)', data: emE,
             borderColor: COLORS.sm.border,
-            backgroundColor: 'rgba(184,93,82,.06)',
-            tension: .35, pointRadius: 3, pointBackgroundColor: COLORS.sm.border,
-            borderWidth: 2 },
+            backgroundColor: 'rgba(248,113,113,.06)',
+            tension: .35, pointRadius: 3, borderWidth: 2 },
           { label: 'PF (RNM-Exp)', data: pfE,
             borderColor: COLORS.rnm.border,
-            backgroundColor: 'rgba(107,154,122,.06)',
-            tension: .35, pointRadius: 3, pointBackgroundColor: COLORS.rnm.border,
-            borderWidth: 2, fill: true }
+            backgroundColor: 'rgba(110,231,183,.06)',
+            tension: .35, pointRadius: 3, borderWidth: 2, fill: true }
         ]
       },
       options: baseOpts()
@@ -2389,8 +2286,8 @@ function buildSimCharts() {
   }
 
   const ns  = [2,5,10,20,50,100,500,1000,5000,10000];
-  const emW = ns.map(n => 2*Math.log(n));
-  const pfW = ns.map(n => { let s = 0; for (let i=1;i<=n;i++) s += 1/i; return 2*s; });
+  const emW = ns.map(n => 2 * Math.log(n));
+  const pfW = ns.map(n => { let s = 0; for (let i = 1; i <= n; i++) s += 1 / i; return 2 * s; });
   const cs = document.getElementById('chart-scale');
   if (cs) {
     CI['cs'] = new Chart(cs, {
@@ -2402,7 +2299,7 @@ function buildSimCharts() {
             borderColor: COLORS.sm.border, backgroundColor: 'transparent',
             tension: .35, borderDash: [5,4], pointRadius: 2, borderWidth: 1.5 },
           { label: 'PF worst-case', data: pfW,
-            borderColor: COLORS.rnm.border, backgroundColor: 'rgba(107,154,122,.04)',
+            borderColor: COLORS.rnm.border, backgroundColor: 'rgba(110,231,183,.04)',
             tension: .35, pointRadius: 2, borderWidth: 2, fill: true }
         ]
       },
@@ -2412,7 +2309,7 @@ function buildSimCharts() {
 }
 
 /* ════════════════════════════════════════════
-   §6 — RESULTS DATA + RENDERING
+   §6 RESULTS DATA + RENDERING
 ═════════════════════════════════════════════ */
 const RD = {
   tab: [
@@ -2445,7 +2342,7 @@ function renderDatasetCharts(ds, ei) {
 
 function switchDS(ds, btn) {
   document.querySelectorAll('.dpanel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.ds-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
   document.getElementById('dp-' + ds).classList.add('active');
   btn.classList.add('active');
   activeDS = ds;
@@ -2465,14 +2362,14 @@ function switchEps(ds, ei, btn) {
       ['rep',  'Rep-3 · TTR','Rep ↓ · TTR ↑'],
     ];
     cont.innerHTML = cells.map(([k, t, s]) =>
-      `<div class="metric-cell"><div class="mt">${t}</div><div class="ms">${s}</div><canvas id="${ds}-${k}-${ei}"></canvas></div>`
+      '<div class="metric-cell"><div class="mt">' + t + '</div><div class="ms">' + s + '</div><canvas id="' + ds + '-' + k + '-' + ei + '"></canvas></div>'
     ).join('');
   }
   setTimeout(() => renderDatasetCharts(ds, ei), 60);
 }
 
 /* ════════════════════════════════════════════
-   POPUP — sample text comparison
+   POPUP — sample text
 ═════════════════════════════════════════════ */
 const SD = {
   tab: [
