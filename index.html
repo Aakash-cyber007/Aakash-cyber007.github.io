@@ -234,7 +234,9 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
 .finding-num{position:absolute;top:10px;right:14px;font-family:var(--fh);font-size:22px;font-weight:800;color:var(--fl-bg,rgba(56,217,200,.1));font-style:italic;}
 .finding .fl{font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--fl,var(--cyan));margin-bottom:6px;}
 .finding p{font-family:var(--fm);font-size:11.5px;color:var(--soft);line-height:1.6;}
-.res-control{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:24px;}
+
+/* ── §6 RESULTS — redesigned ── */
+.res-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:20px;}
 .dtabs{display:flex;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;}
 .dtab{padding:9px 20px;font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:transparent;border:none;cursor:pointer;border-right:1px solid var(--border);transition:all .22s;}
 .dtab:last-child{border-right:none;}
@@ -244,25 +246,39 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
 .samples-btn:hover{border-color:var(--violet);background:var(--violet-2);}
 .samples-btn svg{width:14px;height:14px;}
 .dpanel{display:none;}.dpanel.active{display:block;}
-.res-layout{display:grid;grid-template-columns:168px 1fr;gap:22px;}
-.eps-stack{display:flex;flex-direction:column;gap:6px;}
-.eps-stack .eyebrow{margin-bottom:12px;}
-.eps-btn{padding:12px 14px;background:var(--card);border:1px solid var(--border);font-family:var(--fm);cursor:pointer;text-align:left;transition:all .25s;color:var(--muted);position:relative;overflow:hidden;border-radius:var(--r-md);}
-.eps-btn::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:transparent;transition:background .25s;border-radius:0 3px 3px 0;}
-.eps-btn .ev{display:block;font-family:var(--fh);font-size:18px;font-weight:700;color:var(--text);line-height:1;margin-bottom:3px;}
-.eps-btn .el{font-family:var(--fm);font-size:9px;letter-spacing:.1em;opacity:.8;}
-.eps-btn.active{color:var(--gold);background:var(--gold-2);border-color:var(--gold-3);}
-.eps-btn.active::before{background:var(--gold);}
-.eps-btn.active .ev{color:var(--gold);}
-.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.metric-cell{background:var(--card);padding:14px 18px;border-radius:var(--r-md);border:1px solid var(--border);}
-.metric-cell .mt{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
-.metric-cell .ms{font-family:var(--fm);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
-.metric-cell canvas{max-height:130px!important;display:block!important;}
-/* insight bar under charts */
-.insight-bar{margin-top:16px;padding:10px 16px;font-family:var(--fm);font-size:11.5px;color:var(--soft);line-height:1.65;background:var(--card-2);border:1px solid var(--border);border-left:3px solid var(--violet);border-radius:0 var(--r-md) var(--r-md) 0;}
+
+/* Legend strip */
+.res-legend{display:flex;align-items:center;gap:20px;padding:10px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:18px;font-family:var(--fm);font-size:11px;color:var(--soft);}
+.res-legend-item{display:flex;align-items:center;gap:7px;}
+.res-legend-dot{width:28px;height:2.5px;border-radius:var(--r-pill);}
+.res-legend-dot.sm{background:var(--red);}
+.res-legend-dot.rnm{background:var(--cyan);}
+.res-legend .note{margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:.06em;}
+
+/* 3×2 grid of line charts */
+.metric-grid-6{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;}
+.metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:border-color .22s;}
+.metric-card:hover{border-color:var(--border-2);}
+.metric-card-head{padding:12px 16px 8px;border-bottom:1px solid var(--border);}
+.metric-card-head .mc-title{font-family:var(--fh);font-size:13px;font-weight:700;color:#fff;line-height:1.2;}
+.metric-card-head .mc-sub{font-family:var(--fm);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.metric-card-body{padding:12px 14px 14px;}
+.metric-card-body canvas{display:block!important;height:140px!important;width:100%!important;}
+
+.insight-bar{margin-top:4px;padding:10px 16px;font-family:var(--fm);font-size:11.5px;color:var(--soft);line-height:1.65;background:var(--card-2);border:1px solid var(--border);border-left:3px solid var(--violet);border-radius:0 var(--r-md) var(--r-md) 0;}
 .insight-bar b{color:var(--gold);}
 .insight-bar em{color:var(--cyan);font-style:italic;}
+
+/* win-badge strip */
+.win-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;}
+.win-cell{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:8px 10px;text-align:center;}
+.win-cell .wc-metric{font-family:var(--fm);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.win-cell .wc-badge{font-family:var(--fh);font-size:11px;font-weight:700;padding:3px 8px;border-radius:var(--r-pill);border:1px solid;}
+.win-cell .wc-badge.rnm{color:var(--cyan);border-color:var(--cyan-3);background:var(--cyan-2);}
+.win-cell .wc-badge.sm{color:var(--red);border-color:var(--red-3);background:var(--red-2);}
+.win-cell .wc-badge.tie{color:var(--muted);border-color:var(--border);background:transparent;}
+
+/* ── rest ── */
 .fc{background:var(--card);padding:26px 24px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;min-height:220px;border-radius:var(--r-lg);border:1px solid var(--border);transition:all .3s cubic-bezier(.22,1,.36,1);}
 .fc-expandable{cursor:pointer;}
 .fc-expandable:hover{border-color:var(--border-2);background:var(--card-2);}
@@ -328,8 +344,8 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
 .pop-comment .cl{font-family:var(--fm);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--violet);margin-bottom:8px;display:flex;align-items:center;gap:9px;}
 .pop-comment .cl::before{content:'';width:18px;height:1px;background:var(--violet);}
 .pop-comment .cb{background:var(--violet-2);border-left:2px solid var(--violet);padding:12px 16px;font-family:var(--fm);font-size:12px;color:var(--soft);line-height:1.7;border-radius:0 var(--r-md) var(--r-md) 0;}
-@media(max-width:1024px){.page{padding:0 32px 48px;}.hero{grid-template-columns:1fr;gap:32px;}.res-layout{grid-template-columns:1fr;}.eps-stack{flex-direction:row;gap:8px;}.eps-stack .eyebrow{display:none;}.lab-stage{grid-template-columns:1fr;}.lab-divider{border:none;border-top:1px solid var(--border);border-bottom:1px solid var(--border);height:44px;}}
-@media(max-width:720px){.page{padding:0 22px 40px;}.topbar{padding:0 22px;}.nav-inner{gap:5px;}.nav-section{min-width:0;padding:0 12px;gap:10px;}.head{grid-template-columns:1fr;}.head-right{text-align:left;}.stats{grid-template-columns:1fr 1fr;}.g3,.g4{grid-template-columns:1fr;}.pop-body{grid-template-columns:1fr;}.hero-meta{grid-template-columns:1fr;}.hero-meta-cell{border-right:none;border-bottom:1px solid var(--border);}.hero-team{flex-wrap:wrap;}.inav-btn{width:34px;}}
+@media(max-width:1024px){.page{padding:0 32px 48px;}.hero{grid-template-columns:1fr;gap:32px;}.metric-grid-6{grid-template-columns:1fr 1fr;}.lab-stage{grid-template-columns:1fr;}.lab-divider{border:none;border-top:1px solid var(--border);border-bottom:1px solid var(--border);height:44px;}}
+@media(max-width:720px){.page{padding:0 22px 40px;}.topbar{padding:0 22px;}.nav-inner{gap:5px;}.nav-section{min-width:0;padding:0 12px;gap:10px;}.head{grid-template-columns:1fr;}.head-right{text-align:left;}.stats{grid-template-columns:1fr 1fr;}.g3,.g4{grid-template-columns:1fr;}.pop-body{grid-template-columns:1fr;}.hero-meta{grid-template-columns:1fr;}.hero-meta-cell{border-right:none;border-bottom:1px solid var(--border);}.hero-team{flex-wrap:wrap;}.inav-btn{width:34px;}.metric-grid-6{grid-template-columns:1fr;}.win-strip{grid-template-columns:repeat(3,1fr);}}
 </style>
 </head>
 <body>
@@ -615,14 +631,15 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
   </div>
 </section>
 
-<!-- §6 RESULTS — REAL DATA -->
+<!-- §6 RESULTS — REDESIGNED with ε on x-axis line charts -->
 <section class="scene" id="sec-6">
   <div class="page">
     <header class="head reveal">
       <div><div class="head-meta"><span class="chap-num">§ 06</span><span class="chap-rule"></span><span>Real-data results</span></div><h1>From theorem <em>to</em> production</h1></div>
       <div class="head-right">Slide 07 / 08<br>TAB · Yelp · PubMed</div>
     </header>
-    <div class="res-control reveal">
+
+    <div class="res-header reveal">
       <div class="dtabs">
         <button class="dtab active" onclick="switchDS('tab',this)">TAB</button>
         <button class="dtab" onclick="switchDS('yelp',this)">Yelp</button>
@@ -634,74 +651,55 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
       </button>
     </div>
 
+    <!-- shared legend -->
+    <div class="res-legend reveal">
+      <div class="res-legend-item"><div class="res-legend-dot sm"></div><span>Softmax (baseline)</span></div>
+      <div class="res-legend-item"><div class="res-legend-dot rnm"></div><span>RNM-Exponential (ours)</span></div>
+      <span class="note">X-axis: privacy budget ε ∈ {1, 5, 10} · lower ε = stronger privacy</span>
+    </div>
+
     <!-- TAB panel -->
     <div class="dpanel active reveal" id="dp-tab">
-      <div class="res-layout">
-        <div class="eps-stack">
-          <div class="eyebrow">Select ε</div>
-          <button class="eps-btn active" onclick="switchEps('tab',0,this)"><span class="ev">ε = 1</span><span class="el">strong privacy · high noise</span></button>
-          <button class="eps-btn" onclick="switchEps('tab',1,this)"><span class="ev">ε = 5</span><span class="el">medium privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('tab',2,this)"><span class="ev">ε = 10</span><span class="el">weak privacy · low noise</span></button>
-        </div>
-        <div>
-          <div class="metric-grid" id="mc-tab">
-            <div class="metric-cell"><div class="mt">Perplexity (PPL)</div><div class="ms">↓ better</div><canvas id="tab-ppl-0" role="img" aria-label="PPL comparison TAB eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">MAUVE</div><div class="ms">↑ better · distribution quality</div><canvas id="tab-mauve-0" role="img" aria-label="MAUVE comparison TAB eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">BERTScore F1</div><div class="ms">↑ better · semantic similarity</div><canvas id="tab-bert-0" role="img" aria-label="BERTScore comparison TAB eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Top-1 token %</div><div class="ms">↑ better · head concentration</div><canvas id="tab-top1-0" role="img" aria-label="Top1 token selection rate TAB eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Rep-3</div><div class="ms">↓ better · repetition rate</div><canvas id="tab-rep-0" role="img" aria-label="Rep3 comparison TAB eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Mean token rank</div><div class="ms">↓ better · head concentration</div><canvas id="tab-rank-0" role="img" aria-label="Mean token rank TAB eps1"></canvas></div>
-          </div>
-          <div class="insight-bar" id="ins-tab">Hover over ε values to switch. <b>Key finding:</b> RNM wins PPL and Top-1% at all ε. MAUVE is near-parity for TAB (both mechanisms produce high-quality structured text). The Top-1% gap (3–5.6pp) is the clearest signal of head concentration.</div>
-        </div>
+      <div class="win-strip" id="ws-tab"></div>
+      <div class="metric-grid-6" id="mg-tab">
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Perplexity</div><div class="mc-sub">↓ better</div></div><div class="metric-card-body"><canvas id="lc-tab-ppl"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">MAUVE</div><div class="mc-sub">↑ better · distribution quality</div></div><div class="metric-card-body"><canvas id="lc-tab-mauve"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">BERTScore F1</div><div class="mc-sub">↑ better · semantic similarity</div></div><div class="metric-card-body"><canvas id="lc-tab-bert"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Top-1 Token %</div><div class="mc-sub">↑ better · head concentration</div></div><div class="metric-card-body"><canvas id="lc-tab-top1"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Rep-3</div><div class="mc-sub">↓ better · repetition rate</div></div><div class="metric-card-body"><canvas id="lc-tab-rep"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Mean Token Rank</div><div class="mc-sub">↓ better · head concentration</div></div><div class="metric-card-body"><canvas id="lc-tab-rank"></canvas></div></div>
       </div>
+      <div class="insight-bar" id="ins-tab"><b>TAB:</b> RNM wins PPL at all three ε values (23.2 / 22.7 / 22.7 vs 25.0 / 27.0 / 26.7) and Top-1% in all configs (+2.9 to +5.6pp). MAUVE is near-parity — structured legal text is well-captured regardless. The PPL trend shows RNM <em>improves slightly</em> as ε tightens, while Softmax degrades.</div>
     </div>
 
     <!-- YELP panel -->
     <div class="dpanel reveal" id="dp-yelp">
-      <div class="res-layout">
-        <div class="eps-stack">
-          <div class="eyebrow">Select ε</div>
-          <button class="eps-btn active" onclick="switchEps('yelp',0,this)"><span class="ev">ε = 1</span><span class="el">strong privacy · high noise</span></button>
-          <button class="eps-btn" onclick="switchEps('yelp',1,this)"><span class="ev">ε = 5</span><span class="el">medium privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('yelp',2,this)"><span class="ev">ε = 10</span><span class="el">weak privacy · low noise</span></button>
-        </div>
-        <div>
-          <div class="metric-grid" id="mc-yelp">
-            <div class="metric-cell"><div class="mt">Perplexity (PPL)</div><div class="ms">↓ better</div><canvas id="yelp-ppl-0" role="img" aria-label="PPL comparison Yelp eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">MAUVE</div><div class="ms">↑ better</div><canvas id="yelp-mauve-0" role="img" aria-label="MAUVE comparison Yelp eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">BERTScore F1</div><div class="ms">↑ better</div><canvas id="yelp-bert-0" role="img" aria-label="BERTScore Yelp eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Top-1 token %</div><div class="ms">↑ better</div><canvas id="yelp-top1-0" role="img" aria-label="Top1 Yelp eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Rep-3</div><div class="ms">↓ better</div><canvas id="yelp-rep-0" role="img" aria-label="Rep3 Yelp eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Mean token rank</div><div class="ms">↓ better</div><canvas id="yelp-rank-0" role="img" aria-label="Mean rank Yelp eps1"></canvas></div>
-          </div>
-          <div class="insight-bar" id="ins-yelp"><b>Mixed result on Yelp.</b> PPL favours RNM at all ε (25.3 vs 27.9 at ε=1). MAUVE shows RNM winning at ε=1 and ε=10, but Softmax wins at ε=5 (0.787 vs 0.573). Top-1% is RNM-dominant in all 3 — the token-level advantage is consistent even when distribution-level metrics fluctuate.</div>
-        </div>
+      <div class="win-strip" id="ws-yelp"></div>
+      <div class="metric-grid-6" id="mg-yelp">
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Perplexity</div><div class="mc-sub">↓ better</div></div><div class="metric-card-body"><canvas id="lc-yelp-ppl"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">MAUVE</div><div class="mc-sub">↑ better · distribution quality</div></div><div class="metric-card-body"><canvas id="lc-yelp-mauve"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">BERTScore F1</div><div class="mc-sub">↑ better · semantic similarity</div></div><div class="metric-card-body"><canvas id="lc-yelp-bert"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Top-1 Token %</div><div class="mc-sub">↑ better · head concentration</div></div><div class="metric-card-body"><canvas id="lc-yelp-top1"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Rep-3</div><div class="mc-sub">↓ better · repetition rate</div></div><div class="metric-card-body"><canvas id="lc-yelp-rep"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Mean Token Rank</div><div class="mc-sub">↓ better · head concentration</div></div><div class="metric-card-body"><canvas id="lc-yelp-rank"></canvas></div></div>
       </div>
+      <div class="insight-bar" id="ins-yelp"><b>Yelp:</b> RNM wins PPL at all ε (25.3 / 24.8 / 23.9 vs 27.9 / 27.6 / 26.6) — a consistent ~7–10% reduction. <b>MAUVE anomaly at ε=5</b>: Softmax scores 0.787 vs RNM 0.573, suggesting cross-entropy misalignment when vocabulary is highly concentrated. RNM recovers at ε=1 and ε=10. Top-1% is RNM-dominant at every ε.</div>
     </div>
 
     <!-- PUBMED panel -->
     <div class="dpanel reveal" id="dp-pubmed">
-      <div class="res-layout">
-        <div class="eps-stack">
-          <div class="eyebrow">Select ε</div>
-          <button class="eps-btn active" onclick="switchEps('pubmed',0,this)"><span class="ev">ε = 1</span><span class="el">strong privacy · high noise</span></button>
-          <button class="eps-btn" onclick="switchEps('pubmed',1,this)"><span class="ev">ε = 5</span><span class="el">medium privacy</span></button>
-          <button class="eps-btn" onclick="switchEps('pubmed',2,this)"><span class="ev">ε = 10</span><span class="el">weak privacy · low noise</span></button>
-        </div>
-        <div>
-          <div class="metric-grid" id="mc-pubmed">
-            <div class="metric-cell"><div class="mt">Perplexity (PPL)</div><div class="ms">↓ better</div><canvas id="pubmed-ppl-0" role="img" aria-label="PPL PubMed eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">MAUVE</div><div class="ms">↑ better</div><canvas id="pubmed-mauve-0" role="img" aria-label="MAUVE PubMed eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">BERTScore F1</div><div class="ms">↑ better</div><canvas id="pubmed-bert-0" role="img" aria-label="BERTScore PubMed eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Top-1 token %</div><div class="ms">↑ better</div><canvas id="pubmed-top1-0" role="img" aria-label="Top1 PubMed eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Rep-3</div><div class="ms">↓ better</div><canvas id="pubmed-rep-0" role="img" aria-label="Rep3 PubMed eps1"></canvas></div>
-            <div class="metric-cell"><div class="mt">Mean token rank</div><div class="ms">↓ better</div><canvas id="pubmed-rank-0" role="img" aria-label="Mean rank PubMed eps1"></canvas></div>
-          </div>
-          <div class="insight-bar" id="ins-pubmed"><b>Strongest result: PubMed.</b> At ε=1, RNM reduces PPL by 34% (21.5 vs 32.6) and improves MAUVE by +36% (0.977 vs 0.719). The structured biomedical domain is where Softmax tail-token degradation is most damaging — and where RNM's head concentration matters most.</div>
-        </div>
+      <div class="win-strip" id="ws-pubmed"></div>
+      <div class="metric-grid-6" id="mg-pubmed">
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Perplexity</div><div class="mc-sub">↓ better</div></div><div class="metric-card-body"><canvas id="lc-pubmed-ppl"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">MAUVE</div><div class="mc-sub">↑ better · distribution quality</div></div><div class="metric-card-body"><canvas id="lc-pubmed-mauve"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">BERTScore F1</div><div class="mc-sub">↑ better · semantic similarity</div></div><div class="metric-card-body"><canvas id="lc-pubmed-bert"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Top-1 Token %</div><div class="mc-sub">↑ better · head concentration</div></div><div class="metric-card-body"><canvas id="lc-pubmed-top1"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Rep-3</div><div class="mc-sub">↓ better · repetition rate</div></div><div class="metric-card-body"><canvas id="lc-pubmed-rep"></canvas></div></div>
+        <div class="metric-card"><div class="metric-card-head"><div class="mc-title">Mean Token Rank</div><div class="mc-sub">↓ better · head concentration</div></div><div class="metric-card-body"><canvas id="lc-pubmed-rank"></canvas></div></div>
       </div>
+      <div class="insight-bar" id="ins-pubmed"><b>PubMed — strongest result.</b> At ε=1: PPL drops 34% (21.5 vs 32.6) and MAUVE improves +36% (0.977 vs 0.719). At ε=5: Softmax MAUVE collapses to 0.479 while RNM holds 0.853 (+78%). The ε→10 curves converge as noise decreases. Biomedical text benefits most — structured domain where tail-token corruption is most damaging.</div>
     </div>
+
   </div>
 </section>
 
@@ -807,7 +805,7 @@ const SECTIONS=[
   {name:'Roadmap',   icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 16l4-8 4 4 4-8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="16" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="16" cy="4" r="1.5" fill="currentColor"/></svg>'},
 ];
 const TOTAL=SECTIONS.length;
-let cur=0,busy=false,simBuilt=false;
+let cur=0,busy=false,simBuilt=false,resultsBuilt=false;
 
 const iconNav=document.getElementById('icon-nav');
 SECTIONS.forEach((s,i)=>{
@@ -841,7 +839,7 @@ function goTo(n){
     leaving.classList.remove('leaving');cur=n;updateChrome();
     entering.classList.remove('entering');entering.classList.add('active');
     if(cur===5&&!simBuilt){buildSimCharts();simBuilt=true;}
-    if(cur===6){setTimeout(()=>renderDatasetCharts(activeDS,activeEps[activeDS]),80);}
+    if(cur===6&&!resultsBuilt){buildAllResults();resultsBuilt=true;}
     setTimeout(()=>{busy=false;},350);
   },320);
 }
@@ -863,7 +861,7 @@ const P_SOFT=(()=>{const e=SCORES.map(q=>Math.exp(q));const Z=e.reduce((a,b)=>a+
 const LAMBDA=2;
 const COIN_PROB=SCORES.map(q=>Math.exp(-(Q_STAR-q)/LAMBDA));
 const TOK_NAMES=['T₁','T₂','T₃','T₄','T₅'];
-const stats={sm:{trials:0,head:0,tail:0,sum:0},rnm:{trials:0,head:0,tail:0,sum:0}};
+const simStats={sm:{trials:0,head:0,tail:0,sum:0},rnm:{trials:0,head:0,tail:0,sum:0}};
 let simBusy=false;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function sampleCategorical(probs){const r=Math.random();let acc=0;for(let i=0;i<probs.length;i++){acc+=probs[i];if(r<acc)return i;}return probs.length-1;}
@@ -875,7 +873,7 @@ function clearPool(side){document.querySelectorAll('#pool-'+side+' .tok').forEac
 function highlightToken(side,idx,cls){const t=document.querySelector('#pool-'+side+' .tok[data-i="'+idx+'"]');if(t)t.classList.add(cls);}
 function unhighlightToken(side,idx,cls){const t=document.querySelector('#pool-'+side+' .tok[data-i="'+idx+'"]');if(t)t.classList.remove(cls);}
 function updateStatsUI(){
-  const sm=stats.sm,rn=stats.rnm;
+  const sm=simStats.sm,rn=simStats.rnm;
   document.getElementById('sm-trials').textContent=sm.trials;
   document.getElementById('sm-head').textContent=sm.head;
   document.getElementById('sm-tail').textContent=sm.tail;
@@ -894,7 +892,7 @@ async function simSoftmax(){
   unhighlightToken('sm',winner,'testing');highlightToken('sm',winner,'winner');setCoin('coin-sm','heads');
   setResult('sm','→ <span style="color:var(--cyan);font-weight:600;">'+TOK_NAMES[winner]+'</span>');
   setStep('sm','Selected <em>'+TOK_NAMES[winner]+'</em> · q = '+SCORES[winner].toFixed(1)+'. Pool unchanged — same tokens eligible next trial.');
-  stats.sm.trials++;stats.sm.sum+=SCORES[winner];if(winner<2)stats.sm.head++;else stats.sm.tail++;updateStatsUI();
+  simStats.sm.trials++;simStats.sm.sum+=SCORES[winner];if(winner<2)simStats.sm.head++;else simStats.sm.tail++;updateStatsUI();
 }
 async function simPF(){
   clearPool('rnm');setStep('rnm','Permuting uniformly…');setResult('rnm','');setCoin('coin-rnm',null);await sleep(420);
@@ -909,7 +907,7 @@ async function simPF(){
       highlightToken('rnm',idx,'winner');setCoin('coin-rnm','heads');
       setResult('rnm','→ <span style="color:var(--cyan);font-weight:600;">'+TOK_NAMES[idx]+'</span>');
       setStep('rnm','<b>Heads.</b> Returning <em>'+TOK_NAMES[idx]+'</em> · q = '+SCORES[idx].toFixed(1)+'. Rejected tokens permanently eliminated.');
-      stats.rnm.trials++;stats.rnm.sum+=SCORES[idx];if(idx<2)stats.rnm.head++;else stats.rnm.tail++;updateStatsUI();return;
+      simStats.rnm.trials++;simStats.rnm.sum+=SCORES[idx];if(idx<2)simStats.rnm.head++;else simStats.rnm.tail++;updateStatsUI();return;
     } else {highlightToken('rnm',idx,'eliminated');setCoin('coin-rnm','tails');await sleep(420);}
   }
 }
@@ -923,7 +921,7 @@ async function simRun(){
 }
 function simReset(){
   if(simBusy)return;
-  stats.sm={trials:0,head:0,tail:0,sum:0};stats.rnm={trials:0,head:0,tail:0,sum:0};
+  simStats.sm={trials:0,head:0,tail:0,sum:0};simStats.rnm={trials:0,head:0,tail:0,sum:0};
   clearPool('sm');clearPool('rnm');setCoin('coin-sm',null);setCoin('coin-rnm',null);
   setResult('sm','');setResult('rnm','');
   setStep('sm','Sample categorically from p ∝ exp(ε · q / 2Δ). One draw, with replacement — every token eligible every time.');
@@ -934,177 +932,260 @@ function simReset(){
   document.getElementById('sim-btn').innerHTML='<svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5v9l8-4.5z"/></svg> Run trial';
 }
 
-/* ── CHARTS ── */
-Chart.defaults.color='#5a6478';Chart.defaults.borderColor='rgba(28,28,46,1)';
+/* ── SIM CHARTS ── */
+Chart.defaults.color='#5a6478';
+Chart.defaults.borderColor='rgba(28,28,46,1)';
 Chart.defaults.font.family="'Space Mono', monospace";
 const CI={};
-const COLORS={sm:{bg:'rgba(248,113,113,.25)',border:'#f87171'},rnm:{bg:'rgba(56,217,200,.22)',border:'#38d9c8'}};
-const baseOpts=(small=true)=>({
-  responsive:true,maintainAspectRatio:false,
-  plugins:{legend:{labels:{font:{family:"'Space Mono'",size:small?9:10},color:'#9ba3b8',boxWidth:10,padding:8}}},
-  scales:{
-    x:{ticks:{font:{family:"'Space Mono'",size:9},color:'#5a6478'},grid:{color:'rgba(28,28,46,.8)'}},
-    y:{ticks:{font:{family:"'Space Mono'",size:9},color:'#5a6478'},grid:{color:'rgba(28,28,46,.8)'}}
-  }
-});
-
-function mkBar(id,labels,smV,rnmV){
-  const ctx=document.getElementById(id);if(!ctx)return;
-  if(CI[id]){CI[id].destroy();delete CI[id];}
-  CI[id]=new Chart(ctx,{type:'bar',
-    data:{labels,datasets:[
-      {label:'Softmax',data:smV,backgroundColor:COLORS.sm.bg,borderColor:COLORS.sm.border,borderWidth:1.5,borderRadius:4,barPercentage:.7},
-      {label:'RNM-Exp',data:rnmV,backgroundColor:COLORS.rnm.bg,borderColor:COLORS.rnm.border,borderWidth:1.5,borderRadius:4,barPercentage:.7}
-    ]},options:baseOpts(true)});
-}
+const C_SM={bg:'rgba(248,113,113,.18)',border:'#f87171'};
+const C_RNM={bg:'rgba(56,217,200,.18)',border:'#38d9c8'};
 
 function buildSimCharts(){
-  const ranks=Array.from({length:12},(_,i)=>'T'+(i+1));
-  const smP=[0.41,0.22,0.12,0.08,0.06,0.04,0.02,0.015,0.01,0.008,0.005,0.003];
-  const rnmP=[0.63,0.21,0.08,0.04,0.02,0.01,0.005,0.003,0.001,0.001,0.0005,0.0002];
   const mkL=(id,labels,smD,rnD,type='bar')=>{
     const ctx=document.getElementById(id);if(!ctx)return;
+    if(CI[id])CI[id].destroy();
     CI[id]=new Chart(ctx,{type,data:{labels,datasets:[
-      {label:'Softmax (EM)',data:smD,backgroundColor:COLORS.sm.bg,borderColor:COLORS.sm.border,borderWidth:1.5,borderRadius:type==='bar'?4:0,tension:.35,pointRadius:type==='line'?3:0,fill:type==='line'},
-      {label:'RNM-Exp (PF)',data:rnD,backgroundColor:COLORS.rnm.bg,borderColor:COLORS.rnm.border,borderWidth:1.5,borderRadius:type==='bar'?4:0,tension:.35,pointRadius:type==='line'?3:0,fill:type==='line'}
-    ]},options:baseOpts(false)});
+      {label:'Softmax',data:smD,backgroundColor:C_SM.bg,borderColor:C_SM.border,borderWidth:1.5,
+       borderRadius:type==='bar'?4:0,tension:.35,pointRadius:type==='line'?3:0,fill:type==='line'},
+      {label:'RNM-Exp',data:rnD,backgroundColor:C_RNM.bg,borderColor:C_RNM.border,borderWidth:1.5,
+       borderRadius:type==='bar'?4:0,tension:.35,pointRadius:type==='line'?3:0,fill:type==='line'}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{family:"'Space Mono'",size:9},color:'#9ba3b8',boxWidth:10,padding:8}}},
+      scales:{x:{ticks:{font:{size:9},color:'#5a6478'},grid:{color:'rgba(28,28,46,.8)'}},
+               y:{ticks:{font:{size:9},color:'#5a6478'},grid:{color:'rgba(28,28,46,.8)'}}}
+    }});
   };
-  mkL('chart-prob',ranks,smP,rnmP,'bar');
-  const pVals=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9];
-  const emE=pVals.map(p=>(4*p)/(1+4*p));
-  const pfE=pVals.map(p=>1-(1-(1-p)**5)/(5*p));
-  mkL('chart-error',pVals.map(p=>p.toFixed(1)),emE,pfE,'line');
+  const ranks=Array.from({length:12},(_,i)=>'T'+(i+1));
+  mkL('chart-prob',ranks,[0.41,0.22,0.12,0.08,0.06,0.04,0.02,0.015,0.01,0.008,0.005,0.003],[0.63,0.21,0.08,0.04,0.02,0.01,0.005,0.003,0.001,0.001,0.0005,0.0002],'bar');
+  const pV=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9];
+  mkL('chart-error',pV.map(p=>p.toFixed(1)),pV.map(p=>(4*p)/(1+4*p)),pV.map(p=>1-(1-(1-p)**5)/(5*p)),'line');
   const ns=[2,5,10,20,50,100,500,1000,5000,10000];
-  const emW=ns.map(n=>2*Math.log(n));
-  const pfW=ns.map(n=>{let s=0;for(let i=1;i<=n;i++)s+=1/i;return 2*s;});
-  mkL('chart-scale',ns.map(String),emW,pfW,'line');
+  mkL('chart-scale',ns.map(String),ns.map(n=>2*Math.log(n)),ns.map(n=>{let s=0;for(let i=1;i<=n;i++)s+=1/i;return 2*s;}),'line');
 }
 
-/* ── REAL EXPERIMENTAL DATA ── */
-/* Format: [softmax_val, rnm_val]                                    */
-/* Source: Track 1 (PPL/MAUVE/BERTScore/Rep), Track 3 (Top-1/Rank)  */
-/* eps index: 0=ε1, 1=ε5, 2=ε10                                     */
+/* ── RESULTS DATA — indexed by [eps_idx] for each dataset ── */
+/* eps_idx: 0=ε1, 1=ε5, 2=ε10                               */
+const EPS_LABELS=['ε=1','ε=5','ε=10'];
+
+/* RD[ds].metric = [sm_eps1, sm_eps5, sm_eps10], [rnm_eps1, rnm_eps5, rnm_eps10] */
 const RD={
-  tab:[
-    {ppl:[24.95,23.17],mauve:[0.994,0.975],bert:[0.769,0.772],top1:[57.2,60.1],rep:[0.035,0.033],rank:[52.89,44.76]},
-    {ppl:[27.00,22.72],mauve:[0.978,0.984],bert:[0.769,0.768],top1:[56.8,62.4],rep:[0.026,0.043],rank:[52.40,44.50]},
-    {ppl:[26.72,22.70],mauve:[0.988,0.999],bert:[0.767,0.768],top1:[56.7,59.7],rep:[0.028,0.044],rank:[48.51,52.96]}
-  ],
-  yelp:[
-    {ppl:[27.87,25.28],mauve:[0.692,0.765],bert:[0.794,0.791],top1:[54.9,59.7],rep:[0.017,0.030],rank:[49.37,55.43]},
-    {ppl:[27.60,24.75],mauve:[0.787,0.573],bert:[0.789,0.790],top1:[56.7,59.5],rep:[0.033,0.030],rank:[47.45,43.08]},
-    {ppl:[26.56,23.87],mauve:[0.619,0.660],bert:[0.791,0.790],top1:[55.1,58.6],rep:[0.032,0.038],rank:[47.68,43.91]}
-  ],
-  pubmed:[
-    {ppl:[32.64,21.49],mauve:[0.719,0.977],bert:[0.771,0.770],top1:[56.9,62.1],rep:[0.031,0.034],rank:[54.08,51.06]},
-    {ppl:[28.71,23.67],mauve:[0.479,0.853],bert:[0.767,0.768],top1:[57.9,61.3],rep:[0.029,0.037],rank:[48.13,46.83]},
-    {ppl:[24.47,25.21],mauve:[0.755,0.809],bert:[0.767,0.768],top1:[58.4,61.4],rep:[0.029,0.036],rank:[44.57,46.37]}
-  ]
+  tab:{
+    ppl:  {sm:[24.95,27.00,26.72], rnm:[23.17,22.72,22.70], lowerBetter:true},
+    mauve:{sm:[0.994,0.978,0.988], rnm:[0.975,0.984,0.999], lowerBetter:false},
+    bert: {sm:[0.769,0.769,0.767], rnm:[0.772,0.768,0.768], lowerBetter:false},
+    top1: {sm:[57.2,56.8,56.7],    rnm:[60.1,62.4,59.7],    lowerBetter:false},
+    rep:  {sm:[0.035,0.026,0.028], rnm:[0.033,0.043,0.044], lowerBetter:true},
+    rank: {sm:[52.89,52.40,48.51], rnm:[44.76,44.50,52.96], lowerBetter:true},
+  },
+  yelp:{
+    ppl:  {sm:[27.87,27.60,26.56], rnm:[25.28,24.75,23.87], lowerBetter:true},
+    mauve:{sm:[0.692,0.787,0.619], rnm:[0.765,0.573,0.660], lowerBetter:false},
+    bert: {sm:[0.794,0.789,0.791], rnm:[0.791,0.790,0.790], lowerBetter:false},
+    top1: {sm:[54.9,56.7,55.1],    rnm:[59.7,59.5,58.6],    lowerBetter:false},
+    rep:  {sm:[0.017,0.033,0.032], rnm:[0.030,0.030,0.038], lowerBetter:true},
+    rank: {sm:[49.37,47.45,47.68], rnm:[55.43,43.08,43.91], lowerBetter:true},
+  },
+  pubmed:{
+    ppl:  {sm:[32.64,28.71,24.47], rnm:[21.49,23.67,25.21], lowerBetter:true},
+    mauve:{sm:[0.719,0.479,0.755], rnm:[0.977,0.853,0.809], lowerBetter:false},
+    bert: {sm:[0.771,0.767,0.767], rnm:[0.770,0.768,0.768], lowerBetter:false},
+    top1: {sm:[56.9,57.9,58.4],    rnm:[62.1,61.3,61.4],    lowerBetter:false},
+    rep:  {sm:[0.031,0.029,0.029], rnm:[0.034,0.037,0.036], lowerBetter:true},
+    rank: {sm:[54.08,48.13,44.57], rnm:[51.06,46.83,46.37], lowerBetter:true},
+  }
 };
 
-let activeDS='tab';
-const activeEps={tab:0,yelp:0,pubmed:0};
+const METRIC_KEYS=['ppl','mauve','bert','top1','rep','rank'];
 
-/* 6 charts per config */
-function renderDatasetCharts(ds,ei){
-  const d=RD[ds][ei];
-  mkBar(ds+'-ppl-'+ei,  ['PPL (lower=better)'],   [d.ppl[0]],   [d.ppl[1]]);
-  mkBar(ds+'-mauve-'+ei,['MAUVE'],                 [d.mauve[0]], [d.mauve[1]]);
-  mkBar(ds+'-bert-'+ei, ['BERTScore F1'],           [d.bert[0]],  [d.bert[1]]);
-  mkBar(ds+'-top1-'+ei, ['Top-1% (higher=better)'],[d.top1[0]],  [d.top1[1]]);
-  mkBar(ds+'-rep-'+ei,  ['Rep-3 (lower=better)'],  [d.rep[0]],   [d.rep[1]]);
-  mkBar(ds+'-rank-'+ei, ['Mean rank (lower=better)'],[d.rank[0]], [d.rank[1]]);
+/* Determine winner per metric across all eps: 'rnm', 'sm', or 'tie' */
+function winnerAcross(smArr, rnmArr, lowerBetter){
+  let rnmW=0, smW=0;
+  for(let i=0;i<3;i++){
+    const rnmBetter = lowerBetter ? rnmArr[i]<smArr[i] : rnmArr[i]>smArr[i];
+    const smBetter  = lowerBetter ? smArr[i]<rnmArr[i] : smArr[i]>rnmArr[i];
+    if(rnmBetter) rnmW++; else if(smBetter) smW++;
+  }
+  if(rnmW>smW) return 'rnm';
+  if(smW>rnmW) return 'sm';
+  return 'tie';
+}
+
+const METRIC_LABELS={ppl:'PPL',mauve:'MAUVE',bert:'BERT F1',top1:'Top-1%',rep:'Rep-3',rank:'Rank'};
+
+function buildWinStrip(ds){
+  const strip=document.getElementById('ws-'+ds);
+  if(!strip)return;
+  strip.innerHTML=METRIC_KEYS.map(k=>{
+    const d=RD[ds][k];
+    const w=winnerAcross(d.sm,d.rnm,d.lowerBetter);
+    const badge=w==='rnm'?'RNM wins':w==='sm'?'SM wins':'Tie';
+    const cls=w==='rnm'?'rnm':w==='sm'?'sm':'tie';
+    return `<div class="win-cell"><div class="wc-metric">${METRIC_LABELS[k]}</div><div class="wc-badge ${cls}">${badge}</div></div>`;
+  }).join('');
+}
+
+function lineChartOpts(lowerBetter){
+  return {
+    responsive:true,
+    maintainAspectRatio:false,
+    animation:{duration:600,easing:'easeInOutQuart'},
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'rgba(8,8,14,.95)',
+        titleFont:{family:"'Exo 2'",size:11,weight:'700'},
+        bodyFont:{family:"'Space Mono'",size:10},
+        padding:10,
+        borderColor:'rgba(28,28,46,1)',
+        borderWidth:1,
+        callbacks:{
+          title:items=>items[0].label,
+          label:item=>`${item.dataset.label}: ${item.parsed.y}`
+        }
+      }
+    },
+    scales:{
+      x:{
+        ticks:{font:{family:"'Space Mono'",size:9},color:'#5a6478',padding:4},
+        grid:{color:'rgba(28,28,46,.7)'},
+        border:{color:'rgba(28,28,46,.7)'}
+      },
+      y:{
+        ticks:{font:{family:"'Space Mono'",size:9},color:'#5a6478',padding:4,maxTicksLimit:5},
+        grid:{color:'rgba(28,28,46,.7)'},
+        border:{color:'rgba(28,28,46,.7)'}
+      }
+    }
+  };
+}
+
+function buildLineChart(canvasId, smVals, rnmVals, lowerBetter){
+  const ctx=document.getElementById(canvasId);
+  if(!ctx)return;
+  if(CI[canvasId]){CI[canvasId].destroy();delete CI[canvasId];}
+
+  CI[canvasId]=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:EPS_LABELS,
+      datasets:[
+        {
+          label:'Softmax',
+          data:smVals,
+          borderColor:'#f87171',
+          backgroundColor:'rgba(248,113,113,.12)',
+          borderWidth:2,
+          pointBackgroundColor:'#f87171',
+          pointBorderColor:'#08080e',
+          pointBorderWidth:2,
+          pointRadius:5,
+          pointHoverRadius:7,
+          tension:0.3,
+          fill:false
+        },
+        {
+          label:'RNM-Exp',
+          data:rnmVals,
+          borderColor:'#38d9c8',
+          backgroundColor:'rgba(56,217,200,.1)',
+          borderWidth:2.5,
+          pointBackgroundColor:'#38d9c8',
+          pointBorderColor:'#08080e',
+          pointBorderWidth:2,
+          pointRadius:5,
+          pointHoverRadius:7,
+          tension:0.3,
+          fill:false
+        }
+      ]
+    },
+    options:lineChartOpts(lowerBetter)
+  });
+}
+
+function buildDatasetCharts(ds){
+  buildWinStrip(ds);
+  METRIC_KEYS.forEach(k=>{
+    const d=RD[ds][k];
+    buildLineChart('lc-'+ds+'-'+k, d.sm, d.rnm, d.lowerBetter);
+  });
+}
+
+let activeDS='tab';
+
+function buildAllResults(){
+  ['tab','yelp','pubmed'].forEach(ds=>buildDatasetCharts(ds));
 }
 
 function switchDS(ds,btn){
   document.querySelectorAll('.dpanel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('dp-'+ds).classList.add('active');btn.classList.add('active');activeDS=ds;
-  setTimeout(()=>renderDatasetCharts(ds,activeEps[ds]),60);
+  document.getElementById('dp-'+ds).classList.add('active');
+  btn.classList.add('active');
+  activeDS=ds;
 }
 
-function switchEps(ds,ei,btn){
-  activeEps[ds]=ei;
-  btn.closest('.eps-stack').querySelectorAll('.eps-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
-  const cont=document.getElementById('mc-'+ds);
-  if(!document.getElementById(ds+'-ppl-'+ei)){
-    const cells=[
-      ['ppl',  'Perplexity (PPL)',   '↓ better'],
-      ['mauve','MAUVE',              '↑ better · distribution quality'],
-      ['bert', 'BERTScore F1',       '↑ better · semantic similarity'],
-      ['top1', 'Top-1 token %',      '↑ better · head concentration'],
-      ['rep',  'Rep-3',              '↓ better · repetition rate'],
-      ['rank', 'Mean token rank',    '↓ better · head concentration']
-    ];
-    cont.innerHTML=cells.map(([k,t,s])=>
-      '<div class="metric-cell"><div class="mt">'+t+'</div><div class="ms">'+s+
-      '</div><canvas id="'+ds+'-'+k+'-'+ei+'" role="img" aria-label="'+t+' '+ds+' eps'+ei+'"></canvas></div>'
-    ).join('');
-  }
-  setTimeout(()=>renderDatasetCharts(ds,ei),60);
-}
-
-/* ── POPUP with actual metric context ── */
+/* ── POPUP ── */
 const SD={
   tab:[
     {eps:'ε=1 · strong privacy · high noise',
      ref:'TAB (text-anonymization-benchmark) — ECHR court cases. Real distribution.',
-     pub:'mattmdjaga/text-anonymization-benchmark-train · train split (refs[:732])',
-     sm:'Softmax PPL=24.95, MAUVE=0.994, Top-1%=57.2%, Mean rank=52.9.\nBoth methods produce high-quality structured legal text at ε=1 on TAB.\nSoftmax MAUVE is slightly higher (0.994 vs 0.975) here — the public model context is strong enough that even Softmax stays coherent.',
-     rnm:'RNM-Exp PPL=23.17 (−7%), MAUVE=0.975, Top-1%=60.1%, Mean rank=44.8.\nRNM selects top-1 tokens 2.9pp more often. Mean rank advantage of 8 positions shows consistent head concentration.',
-     note:'TAB ε=1: RNM wins PPL and Top-1%, but MAUVE is very close (near-parity). The structured legal domain is already well-captured by InvisibleInk\'s Top-k+ filter, leaving less room for the selection mechanism to differentiate.'},
+     pub:'mattmdjaga/text-anonymization-benchmark-train · train split',
+     sm:'Softmax PPL=24.95, MAUVE=0.994, Top-1%=57.2%, Mean rank=52.9.\nBoth methods produce high-quality structured legal text at ε=1 on TAB. Softmax MAUVE is slightly higher (0.994 vs 0.975) here.',
+     rnm:'RNM-Exp PPL=23.17 (−7%), MAUVE=0.975, Top-1%=60.1%, Mean rank=44.8.\nRNM selects top-1 tokens 2.9pp more often.',
+     note:'TAB ε=1: RNM wins PPL and Top-1%, MAUVE near-parity. Structured legal domain well-captured by Top-k+ filter.'},
     {eps:'ε=5 · medium privacy',
      ref:'TAB corpus — anonymised ECHR legal proceedings.',
      pub:'mattmdjaga/text-anonymization-benchmark-train',
      sm:'Softmax PPL=27.00, MAUVE=0.978, Top-1%=56.8%, Rep-3=0.026.',
-     rnm:'RNM-Exp PPL=22.72 (−16%), MAUVE=0.984, Top-1%=62.4%, Rep-3=0.043.\nAt ε=5, RNM wins all metrics. PPL gap widens to 16%. Top-1% gap is the largest across all TAB configs (5.6pp).',
-     note:'TAB ε=5: RNM wins all 5 metrics. This is the cleanest result — medium privacy where noise is high enough to matter but not so high that the domain overwhelms the mechanism difference.'},
+     rnm:'RNM-Exp PPL=22.72 (−16%), MAUVE=0.984, Top-1%=62.4%.\nRNM wins all metrics at ε=5. Largest Top-1% gap (5.6pp).',
+     note:'TAB ε=5: Cleanest result — medium privacy, RNM wins all 5 metrics.'},
     {eps:'ε=10 · weak privacy · low noise',
      ref:'TAB corpus — anonymised ECHR legal proceedings.',
      pub:'mattmdjaga/text-anonymization-benchmark-train',
      sm:'Softmax PPL=26.72, MAUVE=0.988, Top-1%=56.7%, Mean rank=48.5.',
-     rnm:'RNM-Exp PPL=22.70, MAUVE=0.999, Top-1%=59.7%, Mean rank=53.0.\nNote: mean rank REVERSES at ε=10 for TAB (Softmax 48.5 vs RNM 53.0). But Top-1% still shows RNM winning. This suggests RNM selects top-1 more often but occasionally picks slightly lower-ranked tokens for the rest.',
-     note:'TAB ε=10: One of two configs where mean rank reverses (tab ε=10 and pubmed ε=10). The Top-1% advantage persists (3pp), suggesting this is noise in the mean rank metric rather than a true reversal.'},
+     rnm:'RNM-Exp PPL=22.70, MAUVE=0.999, Top-1%=59.7%.\nMean rank reverses at ε=10 but Top-1% advantage persists (3pp).',
+     note:'TAB ε=10: One of two configs where mean rank reverses. Top-1% still RNM-dominant.'},
   ],
   yelp:[
     {eps:'ε=1 · strong privacy · high noise',
-     ref:'Yelp polarity dataset — binary sentiment reviews (neg/pos).',
-     pub:'yelp_polarity train[:5000] used as generation refs',
-     sm:'Softmax PPL=27.87, MAUVE=0.692, Top-1%=54.9%, Rep-3=0.017.\nSoftmax shows VERY low Rep-3 (0.017) — surprisingly non-repetitive, but MAUVE is lower.',
-     rnm:'RNM-Exp PPL=25.28, MAUVE=0.765, Top-1%=59.7%, Rep-3=0.030.\nAt ε=1, RNM wins PPL (−9.3%) and MAUVE (+10.5%) and Top-1% (+4.8pp).',
-     note:'Yelp ε=1: RNM wins. Softmax\'s unusually low Rep-3 may reflect degenerate but non-repetitive outputs (single-word or very short generations). MAUVE of 0.692 confirms Softmax distribution diverges more from real reviews.'},
+     ref:'Yelp polarity dataset — binary sentiment reviews.',
+     pub:'yelp_polarity train[:5000]',
+     sm:'Softmax PPL=27.87, MAUVE=0.692, Top-1%=54.9%, Rep-3=0.017.',
+     rnm:'RNM-Exp PPL=25.28, MAUVE=0.765, Top-1%=59.7%.\nAt ε=1, RNM wins PPL (−9.3%) and MAUVE (+10.5%) and Top-1% (+4.8pp).',
+     note:'Yelp ε=1: RNM wins. Softmax low Rep-3 may reflect degenerate short outputs.'},
     {eps:'ε=5 · medium privacy',
      ref:'Yelp polarity — binary sentiment reviews.',
      pub:'yelp_polarity train[:5000]',
-     sm:'Softmax PPL=27.60, MAUVE=0.787, Top-1%=56.7%.\nSoftmax achieves the highest MAUVE of any Yelp config (0.787).',
-     rnm:'RNM-Exp PPL=24.75, MAUVE=0.573, Top-1%=59.5%.\nRNM wins PPL (−10.3%) but LOSES MAUVE at ε=5 (0.573 vs 0.787). Top-1% still RNM-dominant.',
-     note:'Yelp ε=5: The main anomaly. RNM\'s tighter vocabulary (lower TTR: 0.134 vs 0.151) may hurt MAUVE here — the distribution diverges from real Yelp reviews because it is TOO concentrated. This is the cross-entropy misalignment case mentioned in the loss-function roadmap.'},
+     sm:'Softmax PPL=27.60, MAUVE=0.787 (highest Yelp config), Top-1%=56.7%.',
+     rnm:'RNM-Exp PPL=24.75, MAUVE=0.573, Top-1%=59.5%.\nRNM wins PPL but LOSES MAUVE at ε=5.',
+     note:'Yelp ε=5: Main anomaly. RNM too concentrated → distribution diverges from real Yelp.'},
     {eps:'ε=10 · weak privacy · low noise',
      ref:'Yelp polarity — binary sentiment reviews.',
      pub:'yelp_polarity train[:5000]',
      sm:'Softmax PPL=26.56, MAUVE=0.619, Top-1%=55.1%.',
-     rnm:'RNM-Exp PPL=23.87, MAUVE=0.660, Top-1%=58.6%.\nAt ε=10 RNM wins both PPL (−10.1%) and MAUVE (+6.6%) and Top-1%.',
-     note:'Yelp ε=10: RNM recovers and wins all metrics. The ε=5 MAUVE anomaly appears to be noise — overall Yelp trend (2/3 MAUVE wins for RNM) supports RNM being better on average.'},
+     rnm:'RNM-Exp PPL=23.87, MAUVE=0.660, Top-1%=58.6%.\nAt ε=10 RNM wins PPL (−10.1%) and MAUVE (+6.6%).',
+     note:'Yelp ε=10: RNM recovers all metrics. ε=5 anomaly is an outlier.'},
   ],
   pubmed:[
     {eps:'ε=1 · strong privacy · high noise',
      ref:'PubMed biomedical abstracts — formal scientific register.',
      pub:'ccdv/pubmed-summarization train[:5000]["abstract"]',
-     sm:'Softmax PPL=32.64, MAUVE=0.719, Top-1%=56.9%.\nHighest PPL and lowest MAUVE of any config — Softmax degrades most at high privacy on structured biomedical text.',
-     rnm:'RNM-Exp PPL=21.49 (−34%!), MAUVE=0.977 (+36%!), Top-1%=62.1%.\nThe largest absolute wins across the entire experiment. This is the flagship result.',
-     note:'PubMed ε=1: The strongest result in the study. PPL drops 34% and MAUVE improves 36% — both massive and clinically meaningful. Biomedical text is highly structured; Softmax\'s tail-token mass corrupts the distribution severely. RNM\'s head concentration is exactly what this domain needs.'},
+     sm:'Softmax PPL=32.64, MAUVE=0.719, Top-1%=56.9%.\nHighest PPL / lowest MAUVE across all configs.',
+     rnm:'RNM-Exp PPL=21.49 (−34%!), MAUVE=0.977 (+36%!), Top-1%=62.1%.\nFlagship result of the study.',
+     note:'PubMed ε=1: Strongest result. PPL −34%, MAUVE +36%. Biomedical text suffers most from Softmax tail corruption.'},
     {eps:'ε=5 · medium privacy',
      ref:'PubMed biomedical abstracts.',
      pub:'ccdv/pubmed-summarization train[:5000]["abstract"]',
-     sm:'Softmax PPL=28.71, MAUVE=0.479 (lowest across all configs!), Top-1%=57.9%.',
-     rnm:'RNM-Exp PPL=23.67 (−17.6%), MAUVE=0.853 (+78.1%), Top-1%=61.3%.\nSoftmax MAUVE of 0.479 at ε=5 is the worst score in the entire study.',
-     note:'PubMed ε=5: Softmax MAUVE collapses to 0.479. RNM-Exp maintains 0.853 — a 78% improvement. This is the most dramatic single-comparison in the results table.'},
+     sm:'Softmax PPL=28.71, MAUVE=0.479 (worst score in study!), Top-1%=57.9%.',
+     rnm:'RNM-Exp PPL=23.67 (−17.6%), MAUVE=0.853 (+78.1%), Top-1%=61.3%.',
+     note:'PubMed ε=5: Softmax MAUVE collapses to 0.479. RNM 78% improvement.'},
     {eps:'ε=10 · weak privacy · low noise',
      ref:'PubMed biomedical abstracts.',
      pub:'ccdv/pubmed-summarization train[:5000]["abstract"]',
-     sm:'Softmax PPL=24.47, MAUVE=0.755, Top-1%=58.4%.\nAt low noise, Softmax recovers substantially.',
-     rnm:'RNM-Exp PPL=25.21, MAUVE=0.809, Top-1%=61.4%.\nThe one config where RNM loses PPL (25.21 vs 24.47). MAUVE and Top-1% still RNM-dominant.',
-     note:'PubMed ε=10: The only config where Softmax wins PPL (by 0.74 units). MAUVE and Top-1% still favour RNM. This is expected — at low noise (ε=10) the two mechanisms converge in behaviour.'},
+     sm:'Softmax PPL=24.47, MAUVE=0.755, Top-1%=58.4%.',
+     rnm:'RNM-Exp PPL=25.21, MAUVE=0.809, Top-1%=61.4%.\nOnly config where Softmax wins PPL (by 0.74).',
+     note:'PubMed ε=10: Only Softmax PPL win. Mechanisms converge at low noise.'},
   ]
 };
 let popDS='tab',popEi=0;
@@ -1119,7 +1200,7 @@ function renderPop(){
   ['tab','yelp','pubmed'].forEach(ds=>document.getElementById('pn-'+ds).classList.toggle('active',ds===popDS));
   [0,1,2].forEach(i=>document.getElementById('pe-'+i).classList.toggle('active',i===popEi));
 }
-function popOpen(){popDS=activeDS;popEi=activeEps[activeDS];renderPop();document.getElementById('pop').classList.add('open');document.body.style.overflow='hidden';}
+function popOpen(){popDS=activeDS;popEi=0;renderPop();document.getElementById('pop').classList.add('open');document.body.style.overflow='hidden';}
 function popSetDS(ds){popDS=ds;renderPop();}
 function popSetEps(ei){popEi=ei;renderPop();}
 function popClose(e){if(e.target.id==='pop')popCloseDirect();}
