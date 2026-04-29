@@ -10,114 +10,83 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ══════════════════════════════════════
-   TOKENS
+   TOKENS — Amber/Teal dark theme
 ══════════════════════════════════════ */
 :root {
-  --bg:       #0a0a0f;
-  --surface:  #111118;
-  --card:     #13131d;
-  --card-2:   #161625;
-  --border:   #1e1e2e;
-  --border-2: #2a2a3e;
-  --text:     #e2e8f0;
-  --soft:     #94a3b8;
-  --muted:    #64748b;
-  --whisper:  #475569;
-  --green:    #6ee7b7;
-  --green-2:  rgba(110,231,183,.06);
-  --green-3:  rgba(110,231,183,.18);
-  --indigo:   #818cf8;
-  --indigo-2: rgba(129,140,248,.06);
-  --indigo-3: rgba(129,140,248,.30);
-  --orange:   #fb923c;
-  --orange-2: rgba(251,146,60,.06);
-  --orange-3: rgba(251,146,60,.30);
+  --bg:       #08080e;
+  --surface:  #0d0d16;
+  --card:     #11111c;
+  --card-2:   #151525;
+  --border:   #1c1c2e;
+  --border-2: #262640;
+  --text:     #e8eaf0;
+  --soft:     #9ba3b8;
+  --muted:    #5a6478;
+  --whisper:  #404860;
+  /* primary: amber/gold */
+  --gold:     #f5c842;
+  --gold-2:   rgba(245,200,66,.07);
+  --gold-3:   rgba(245,200,66,.22);
+  /* secondary: cyan/teal */
+  --cyan:     #38d9c8;
+  --cyan-2:   rgba(56,217,200,.06);
+  --cyan-3:   rgba(56,217,200,.22);
+  /* accent: violet */
+  --violet:   #a78bfa;
+  --violet-2: rgba(167,139,250,.06);
+  --violet-3: rgba(167,139,250,.28);
+  /* danger */
   --red:      #f87171;
-  --red-2:    rgba(248,113,113,.06);
-  --red-3:    rgba(248,113,113,.30);
+  --red-2:    rgba(248,113,113,.07);
+  --red-3:    rgba(248,113,113,.28);
   --fh: 'Exo 2', sans-serif;
   --fm: 'Space Mono', monospace;
-  /* radius scale */
-  --r-sm:   5px;
-  --r-md:   10px;
-  --r-lg:   14px;
-  --r-xl:   20px;
-  --r-pill: 999px;
+  --r-sm: 4px; --r-md: 9px; --r-lg: 14px; --r-xl: 20px; --r-pill: 999px;
 }
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;}
-body{
-  font-family:var(--fm);
-  background:var(--bg);
-  color:var(--text);
-  font-size:14px;
-  line-height:1.65;
-  -webkit-font-smoothing:antialiased;
-}
+body{font-family:var(--fm);background:var(--bg);color:var(--text);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;}
 
-/* atmosphere */
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:
-    linear-gradient(rgba(110,231,183,.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(110,231,183,.03) 1px,transparent 1px);
-  background-size:40px 40px;
+  background-image:linear-gradient(rgba(245,200,66,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(56,217,200,.025) 1px,transparent 1px);
+  background-size:44px 44px;
 }
 body::after{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 60% 40% at 15% 10%,rgba(110,231,183,.06) 0%,transparent 70%),
-    radial-gradient(ellipse 50% 35% at 85% 85%,rgba(129,140,248,.05) 0%,transparent 65%);
+  background:radial-gradient(ellipse 55% 38% at 12% 8%,rgba(245,200,66,.07) 0%,transparent 70%),
+             radial-gradient(ellipse 45% 32% at 88% 88%,rgba(56,217,200,.05) 0%,transparent 65%);
 }
 
-/* ══ TOPBAR ══ */
+/* ── TOPBAR ── */
 .topbar{
   position:fixed;top:0;left:0;right:0;z-index:200;
   height:52px;display:flex;align-items:center;justify-content:space-between;
   padding:0 40px;
-  background:rgba(10,10,15,.92);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  background:rgba(8,8,14,.94);backdrop-filter:blur(16px);
   border-bottom:1px solid var(--border);
 }
 .topbar::before{
   content:'';position:absolute;left:0;bottom:-1px;height:1px;
-  width:var(--prog,0%);background:var(--green);
+  width:var(--prog,0%);
+  background:linear-gradient(90deg,var(--gold),var(--cyan));
   transition:width .55s cubic-bezier(.16,1,.3,1);
-  box-shadow:0 0 8px var(--green-3);
+  box-shadow:0 0 10px var(--gold-3);
 }
-.tb-brand{
-  font-family:var(--fh);font-size:13px;font-weight:800;
-  color:var(--green);letter-spacing:.08em;text-transform:uppercase;
-}
+.tb-brand{font-family:var(--fh);font-size:13px;font-weight:800;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;}
 .tb-brand-sep{display:inline-block;width:18px;height:1px;background:var(--border-2);margin:0 12px;vertical-align:middle;}
 .tb-brand i{font-style:italic;font-weight:400;color:var(--soft);font-size:12px;text-transform:none;letter-spacing:.02em;}
 .tb-meta{display:flex;align-items:center;gap:24px;font-family:var(--fm);font-size:11px;color:var(--muted);letter-spacing:.08em;}
-.tb-dot{display:flex;align-items:center;gap:6px;color:var(--green);}
-.tb-dot::before{
-  content:'';width:6px;height:6px;border-radius:50%;
-  background:var(--green);box-shadow:0 0 6px var(--green-3);
-  animation:pulse 2s ease-in-out infinite;
-}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.tb-dot{display:flex;align-items:center;gap:6px;color:var(--cyan);}
+.tb-dot::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan-3);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-/* ══ STAGE ══ */
+/* ── STAGE ── */
 .stage{position:fixed;top:52px;left:0;right:0;bottom:64px;overflow:hidden;}
-.scene{
-  position:absolute;inset:0;
-  overflow-y:auto;overflow-x:hidden;
-  z-index:1;visibility:hidden;opacity:0;transform:translateY(18px);
-  transition:opacity .5s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1),visibility 0s linear .55s;
-}
+.scene{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;z-index:1;visibility:hidden;opacity:0;transform:translateY(18px);transition:opacity .5s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1),visibility 0s linear .55s;}
 .scene.entering{visibility:visible;transition:visibility 0s linear 0s;}
-.scene.active{
-  visibility:visible;opacity:1;transform:translateY(0);
-  transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .65s cubic-bezier(.22,1,.36,1),visibility 0s linear 0s;
-}
-.scene.leaving{
-  opacity:0;transform:translateY(-12px);
-  transition:opacity .3s cubic-bezier(.4,0,1,1),transform .35s cubic-bezier(.4,0,1,1),visibility 0s linear .35s;
-}
+.scene.active{visibility:visible;opacity:1;transform:translateY(0);transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .65s cubic-bezier(.22,1,.36,1),visibility 0s linear 0s;}
+.scene.leaving{opacity:0;transform:translateY(-12px);transition:opacity .3s,transform .35s,visibility 0s linear .35s;}
 .scene.active .reveal{animation:revealUp .7s cubic-bezier(.22,1,.36,1) backwards;}
 .scene.active .reveal:nth-child(1){animation-delay:.08s;}
 .scene.active .reveal:nth-child(2){animation-delay:.18s;}
@@ -127,464 +96,383 @@ body::after{
 .scene.active .reveal:nth-child(6){animation-delay:.58s;}
 @keyframes revealUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
 
-/* ══ NAV BAR ══ */
+/* ── NAV BAR ── */
 .nav-bar{
   position:fixed;bottom:0;left:0;right:0;z-index:200;
   height:64px;display:flex;align-items:center;justify-content:center;
-  background:rgba(10,10,15,.95);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  background:rgba(8,8,14,.97);backdrop-filter:blur(16px);
   border-top:1px solid var(--border);
 }
-.nav-bar .nav-inner{display:flex;align-items:center;gap:12px;}
-.nav-btn{
-  height:38px;display:flex;align-items:center;gap:9px;
-  padding:0 20px;
-  background:transparent;border:1px solid var(--border);
-  color:var(--muted);
-  font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-  cursor:pointer;transition:all .22s cubic-bezier(.22,1,.36,1);
-  border-radius:var(--r-md);
-}
-.nav-btn svg{width:13px;height:13px;flex-shrink:0;}
-.nav-btn:hover:not(:disabled){border-color:var(--green);color:var(--green);background:var(--green-2);}
-.nav-btn:disabled{opacity:.25;cursor:not-allowed;}
-.nav-btn.home{width:38px;padding:0;justify-content:center;}
-.nav-btn.home:hover:not(:disabled){border-color:var(--indigo);color:var(--indigo);background:var(--indigo-2);}
+.nav-inner{display:flex;align-items:center;gap:8px;}
 .nav-section{
-  display:flex;align-items:center;gap:14px;
-  padding:0 18px;height:38px;
+  display:flex;align-items:center;gap:14px;padding:0 18px;height:38px;
   border:1px solid var(--border);background:var(--card);
-  min-width:280px;justify-content:center;
-  border-radius:var(--r-md);
+  min-width:240px;justify-content:center;border-radius:var(--r-md);
 }
-.nav-section .ns-num{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--green);letter-spacing:.1em;}
 .nav-section .ns-name{font-family:var(--fh);font-size:11px;color:var(--text);letter-spacing:.04em;font-weight:600;}
 .nav-section .ns-counter{font-family:var(--fm);font-size:10.5px;color:var(--muted);letter-spacing:.08em;padding-left:14px;border-left:1px solid var(--border);}
-.nav-section .ns-counter b{color:var(--green);font-weight:500;}
-.nav-progress-mini{display:flex;gap:4px;padding:0 6px;}
-.nav-pip{width:22px;height:3px;background:var(--border);cursor:pointer;transition:background .25s;border-radius:var(--r-pill);}
-.nav-pip:hover{background:var(--soft);}
-.nav-pip.active{background:var(--green);box-shadow:0 0 6px var(--green-3);}
+.nav-section .ns-counter b{color:var(--gold);font-weight:500;}
 
-/* ══ PAGE ══ */
+/* ── ICON NAV BUTTONS ── */
+.icon-nav{display:flex;align-items:center;gap:6px;}
+.inav-btn{
+  width:40px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  cursor:pointer;transition:all .22s cubic-bezier(.22,1,.36,1);
+  border-radius:var(--r-md);position:relative;
+}
+.inav-btn svg{width:16px;height:16px;flex-shrink:0;}
+.inav-btn .inav-label{font-family:var(--fh);font-size:7.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1;}
+.inav-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-2);}
+.inav-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-2);}
+.inav-btn.active .inav-label{color:var(--gold);}
+.nav-prev-next{display:flex;gap:6px;}
+.nav-btn{
+  height:38px;display:flex;align-items:center;gap:8px;padding:0 16px;
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;transition:all .22s;border-radius:var(--r-md);
+}
+.nav-btn svg{width:13px;height:13px;}
+.nav-btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan);background:var(--cyan-2);}
+.nav-btn:disabled{opacity:.2;cursor:not-allowed;}
+
+/* ── PAGE ── */
 .page{max-width:1100px;margin:0 auto;padding:0 48px 56px;position:relative;}
-.head{
-  padding:38px 0 28px;display:grid;grid-template-columns:1fr auto;
-  gap:24px;align-items:end;border-bottom:1px solid var(--border);margin-bottom:32px;
-}
-.head-meta{
-  display:flex;align-items:center;gap:14px;
-  font-family:var(--fm);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;
-}
-.head-meta .chap-num{font-family:var(--fh);font-size:16px;font-weight:700;letter-spacing:.04em;color:var(--green);}
-.head-meta .chap-rule{width:28px;height:1px;background:var(--green);box-shadow:0 0 6px var(--green-3);}
-.head h1{font-family:var(--fh);font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.05;letter-spacing:-.015em;color:#fff;}
-.head h1 em{font-style:italic;font-weight:600;color:var(--green);}
+.head{padding:38px 0 28px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;border-bottom:1px solid var(--border);margin-bottom:32px;}
+.head-meta{display:flex;align-items:center;gap:14px;font-family:var(--fm);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
+.head-meta .chap-num{font-family:var(--fh);font-size:16px;font-weight:700;letter-spacing:.04em;color:var(--gold);}
+.head-meta .chap-rule{width:28px;height:1px;background:var(--gold);box-shadow:0 0 6px var(--gold-3);}
+.head h1{font-family:var(--fh);font-size:clamp(26px,3.8vw,42px);font-weight:800;line-height:1.05;letter-spacing:-.015em;color:#fff;}
+.head h1 em{font-style:italic;font-weight:600;color:var(--cyan);}
 .head h1 .amp{font-style:italic;font-weight:400;color:var(--soft);}
 .head-right{font-family:var(--fm);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:right;padding-bottom:4px;line-height:1.7;}
 
-/* ══ PRIMITIVES ══ */
-.eyebrow{
-  font-family:var(--fm);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px;
-}
-.eyebrow::before{content:'';width:18px;height:1px;background:var(--green);}
-
-.tag{
-  display:inline-block;font-family:var(--fh);
-  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  padding:4px 12px;border:1px solid;border-radius:var(--r-pill);
-}
-.tag-g{color:var(--green);border-color:var(--green-3);background:var(--green-2);}
-.tag-i{color:var(--indigo);border-color:var(--indigo-3);background:var(--indigo-2);}
-.tag-o{color:var(--orange);border-color:var(--orange-3);background:var(--orange-2);}
+/* ── PRIMITIVES ── */
+.eyebrow{font-family:var(--fm);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.eyebrow::before{content:'';width:18px;height:1px;background:var(--gold);}
+.tag{display:inline-block;font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border:1px solid;border-radius:var(--r-pill);}
+.tag-g{color:var(--cyan);border-color:var(--cyan-3);background:var(--cyan-2);}
+.tag-i{color:var(--violet);border-color:var(--violet-3);background:var(--violet-2);}
+.tag-o{color:var(--gold);border-color:var(--gold-3);background:var(--gold-2);}
 .tag-r{color:var(--red);border-color:var(--red-3);background:var(--red-2);}
 .tag-m{color:var(--muted);border-color:var(--border);background:transparent;}
+.formula{background:var(--cyan-2);border:1px solid rgba(56,217,200,.15);border-left:3px solid var(--cyan);padding:12px 16px;font-size:12px;color:var(--cyan);margin:14px 0;letter-spacing:.04em;font-family:var(--fm);line-height:1.7;border-radius:0 var(--r-md) var(--r-md) 0;}
+.formula b{color:var(--cyan);font-weight:700;background:rgba(56,217,200,.1);padding:1px 6px;border-radius:4px;}
 
-.formula{
-  background:var(--green-2);border:1px solid rgba(110,231,183,.15);
-  border-left:3px solid var(--green);
-  padding:12px 16px;font-size:12px;color:var(--green);margin:14px 0;
-  letter-spacing:.04em;font-family:var(--fm);line-height:1.7;
-  border-radius:0 var(--r-md) var(--r-md) 0;
-}
-.formula b{color:var(--green);font-weight:700;background:rgba(110,231,183,.1);padding:1px 6px;border-radius:4px;}
-
-/* ══ GRIDS ══ */
+/* ── GRIDS ── */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);}
 
-/* ══ CARDS ══ */
-.card{
-  background:var(--card);padding:24px;
-  position:relative;overflow:hidden;transition:background .25s;
-  border-radius:var(--r-lg);border:1px solid var(--border);
-}
-.card-hl::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  border-radius:var(--r-lg) var(--r-lg) 0 0;
-}
-.card-hl-g::before{background:var(--green);}
-.card-hl-i::before{background:var(--indigo);}
-.card-hl-o::before{background:var(--orange);}
+/* ── CARDS ── */
+.card{background:var(--card);padding:24px;position:relative;overflow:hidden;transition:background .25s;border-radius:var(--r-lg);border:1px solid var(--border);}
+.card-hl::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r-lg) var(--r-lg) 0 0;}
+.card-hl-g::before{background:var(--cyan);}
+.card-hl-i::before{background:var(--violet);}
+.card-hl-o::before{background:var(--gold);}
 .card-hl-r::before{background:var(--red);}
-.card-vl::after{
-  content:'';position:absolute;top:24px;bottom:24px;left:0;width:3px;
-  background:var(--green);border-radius:0 3px 3px 0;
-}
-.card-num{
-  position:absolute;top:14px;right:16px;
-  font-family:var(--fh);font-size:32px;font-weight:800;
-  color:rgba(255,255,255,.04);pointer-events:none;user-select:none;
-}
+.card-vl::after{content:'';position:absolute;top:24px;bottom:24px;left:0;width:3px;background:var(--cyan);border-radius:0 3px 3px 0;}
+.card-num{position:absolute;top:14px;right:16px;font-family:var(--fh);font-size:32px;font-weight:800;color:rgba(255,255,255,.04);pointer-events:none;user-select:none;}
 .card h3{font-family:var(--fh);font-weight:700;font-size:17px;line-height:1.3;color:#fff;margin-bottom:9px;}
-.card h3 em{font-style:italic;font-weight:600;color:var(--green);}
+.card h3 em{font-style:italic;font-weight:600;color:var(--cyan);}
 .card p{font-family:var(--fm);font-size:12px;color:var(--soft);line-height:1.75;}
 .card p strong{color:var(--text);font-weight:500;}
-.card p em{color:var(--green);font-style:italic;}
+.card p em{color:var(--cyan);font-style:italic;}
 
-/* ══ HERO ══ */
+/* ── HERO ── */
 .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:center;padding:28px 0 24px;}
 .hero-left{display:flex;flex-direction:column;gap:22px;}
 .hero-folio{font-family:var(--fm);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:14px;}
-.hero-folio b{color:var(--green);font-weight:400;}
+.hero-folio b{color:var(--gold);font-weight:400;}
 .hero-folio .ff-rule{width:60px;height:1px;background:var(--border-2);}
-.hero-h1{font-family:var(--fh);font-size:clamp(40px,5.4vw,70px);font-weight:800;line-height:.95;letter-spacing:-.02em;color:#fff;}
+
+/* Project name highlight */
+.hero-h1{font-family:var(--fh);font-size:clamp(38px,5vw,64px);font-weight:800;line-height:.95;letter-spacing:-.02em;color:#fff;}
 .hero-h1 .h-soft{color:var(--soft);font-weight:400;font-style:italic;}
-.hero-h1 .h-glow{color:var(--green);text-shadow:0 0 28px rgba(110,231,183,.18);}
+.hero-h1 .h-project{
+  display:inline-block;
+  color:var(--gold);
+  text-shadow:0 0 32px rgba(245,200,66,.35),0 0 8px rgba(245,200,66,.2);
+  position:relative;
+}
+.hero-h1 .h-project::after{
+  content:'';position:absolute;bottom:-4px;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--gold),var(--cyan));
+  border-radius:var(--r-pill);
+  box-shadow:0 0 10px var(--gold-3);
+}
+.hero-h1 .h-sub{color:var(--cyan);font-weight:600;font-size:.7em;display:block;letter-spacing:.02em;margin-top:6px;text-shadow:0 0 20px rgba(56,217,200,.3);}
 .hero-lede{font-family:var(--fm);font-size:13px;color:var(--soft);line-height:1.8;max-width:440px;}
 .hero-lede strong{color:var(--text);font-weight:500;}
-.hero-lede em{color:var(--green);font-style:italic;}
+.hero-lede em{color:var(--gold);font-style:italic;}
 .hero-chips{display:flex;flex-wrap:wrap;gap:7px;}
-.hero-meta{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  border:1px solid var(--border);background:var(--surface);
-  border-radius:var(--r-lg);overflow:hidden;
-}
+.hero-meta{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--border);background:var(--surface);border-radius:var(--r-lg);overflow:hidden;}
 .hero-meta-cell{padding:14px 16px;border-right:1px solid var(--border);}
 .hero-meta-cell:last-child{border-right:none;}
 .hero-meta-cell .l{font-family:var(--fm);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
 .hero-meta-cell .v{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--text);}
 
+/* team intro on hero */
+.hero-team{display:flex;gap:18px;margin-top:4px;}
+.hero-team-mem{display:flex;align-items:center;gap:8px;}
+.hero-team-mem .av{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold-3);background:var(--gold-2);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:10px;font-weight:700;color:var(--gold);}
+.hero-team-mem .nm{font-family:var(--fh);font-size:11px;font-weight:600;color:var(--text);}
+.hero-team-mem .id{font-family:var(--fm);font-size:9px;color:var(--muted);}
+
 /* code frame */
-.codex{background:#080b12;border:1px solid var(--border);overflow:hidden;position:relative;border-radius:var(--r-lg);}
-.codex::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,var(--green),transparent);
-  animation:scan 3s ease-in-out infinite;
-}
-@keyframes scan{0%,100%{opacity:.25;transform:translateX(-100%);}50%{opacity:1;transform:translateX(100%);}}
+.codex{background:#060910;border:1px solid var(--border);overflow:hidden;position:relative;border-radius:var(--r-lg);}
+.codex::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:scan 3s ease-in-out infinite;}
+@keyframes scan{0%,100%{opacity:.2;transform:translateX(-100%);}50%{opacity:1;transform:translateX(100%);}}
 .codex-bar{display:flex;align-items:center;gap:6px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);}
 .cdot{width:9px;height:9px;border-radius:50%;}
-.cdot.r{background:var(--red);}.cdot.y{background:var(--orange);}.cdot.g{background:var(--green);}
+.cdot.r{background:var(--red);}.cdot.y{background:var(--gold);}.cdot.g{background:var(--cyan);}
 .codex-bar .filename{font-family:var(--fm);font-size:10.5px;color:var(--muted);margin-left:6px;letter-spacing:.04em;}
 .codex-bar .filename b{color:var(--text);font-weight:400;}
-.codex-bar .lang{margin-left:auto;font-family:var(--fh);font-size:9.5px;font-weight:700;letter-spacing:.18em;color:var(--green);text-transform:uppercase;}
+.codex-bar .lang{margin-left:auto;font-family:var(--fh);font-size:9.5px;font-weight:700;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .codex-body{padding:16px 18px;font-family:var(--fm);font-size:12px;line-height:1.95;}
-.cm{color:#2d4060;font-style:italic;}.kw{color:var(--indigo);}.fn{color:var(--green);}.st{color:var(--orange);}.nm{color:var(--text);}
+.cm{color:#2d4060;font-style:italic;}.kw{color:var(--violet);}.fn{color:var(--cyan);}.st{color:var(--gold);}.nm{color:var(--text);}
 
 /* stats */
-.stats{
-  display:grid;grid-template-columns:repeat(5,1fr);
-  border:1px solid var(--border);background:var(--surface);
-  margin-top:12px;border-radius:var(--r-lg);overflow:hidden;
-}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--border);background:var(--surface);margin-top:12px;border-radius:var(--r-lg);overflow:hidden;}
 .stats-cell{padding:18px 16px;border-right:1px solid var(--border);transition:background .22s;}
 .stats-cell:last-child{border-right:none;}
-.stats-cell:hover{background:var(--green-2);}
-.stats-cell .num{
-  font-family:var(--fh);font-size:clamp(26px,3vw,38px);
-  font-weight:800;letter-spacing:-.03em;color:#fff;line-height:1;
-  display:flex;align-items:baseline;gap:5px;
-}
-.stats-cell .num em{color:var(--green);font-style:italic;}
+.stats-cell:hover{background:var(--gold-2);}
+.stats-cell .num{font-family:var(--fh);font-size:clamp(24px,2.8vw,36px);font-weight:800;letter-spacing:-.03em;color:#fff;line-height:1;display:flex;align-items:baseline;gap:5px;}
+.stats-cell .num em{color:var(--gold);font-style:italic;}
 .stats-cell .num .u{font-size:.35em;color:var(--muted);font-weight:400;font-style:normal;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;}
 .stats-cell .lbl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
 
-/* ══ §3 INTUITION ══ */
-.intuition-bar{
-  display:grid;grid-template-columns:1fr auto;gap:0;
-  border:1px solid var(--border);margin-bottom:16px;
-  border-radius:var(--r-lg);overflow:hidden;
-}
+/* ── §3 COIN LAB ── */
+.intuition-bar{display:grid;grid-template-columns:1fr auto;gap:0;border:1px solid var(--border);margin-bottom:16px;border-radius:var(--r-lg);overflow:hidden;}
 .intuition-bar .lede{background:var(--card);padding:16px 20px;font-family:var(--fm);font-size:12.5px;color:var(--soft);display:flex;align-items:center;line-height:1.7;}
-.intuition-bar .lede b{color:var(--green);font-weight:700;}
+.intuition-bar .lede b{color:var(--gold);font-weight:700;}
 .intuition-bar .controls{background:var(--card);display:flex;align-items:center;gap:8px;padding:12px 18px;border-left:1px solid var(--border);}
-.run-btn{
-  display:flex;align-items:center;gap:9px;height:34px;padding:0 16px;
-  background:var(--green);color:#000;border:none;cursor:pointer;
-  font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  transition:all .2s;border-radius:var(--r-md);
-}
-.run-btn:hover:not(:disabled){background:#88f0c5;box-shadow:0 0 16px var(--green-3);}
-.run-btn:disabled{opacity:.4;cursor:not-allowed;background:var(--muted);color:var(--text);}
+.run-btn{display:flex;align-items:center;gap:9px;height:34px;padding:0 16px;background:var(--gold);color:#000;border:none;cursor:pointer;font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;border-radius:var(--r-md);}
+.run-btn:hover:not(:disabled){background:#f9d860;box-shadow:0 0 16px var(--gold-3);}
+.run-btn:disabled{opacity:.4;cursor:not-allowed;}
 .run-btn svg{width:11px;height:11px;}
-.reset-btn{
-  height:34px;padding:0 14px;background:transparent;color:var(--muted);
-  border:1px solid var(--border-2);
-  font-family:var(--fh);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;border-radius:var(--r-md);
-}
+.reset-btn{height:34px;padding:0 14px;background:transparent;color:var(--muted);border:1px solid var(--border-2);font-family:var(--fh);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;border-radius:var(--r-md);}
 .reset-btn:hover{color:var(--text);border-color:var(--soft);}
 
 .lab{border:1px solid var(--border);background:var(--card);border-radius:var(--r-lg);overflow:hidden;}
-.lab-head{padding:16px 24px;text-align:center;background:var(--green-2);border-bottom:1px solid var(--border);}
-.lab-head .lh-eyebrow{font-family:var(--fm);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--green);margin-bottom:5px;}
+.lab-head{padding:16px 24px;text-align:center;background:var(--gold-2);border-bottom:1px solid var(--border);}
+.lab-head .lh-eyebrow{font-family:var(--fm);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:5px;}
 .lab-head h3{font-family:var(--fh);font-size:19px;font-weight:700;color:#fff;}
-.lab-head h3 em{font-style:italic;font-weight:600;color:var(--green);}
+.lab-head h3 em{font-style:italic;font-weight:600;color:var(--gold);}
 .lab-stage{display:grid;grid-template-columns:1fr 56px 1fr;}
 .lab-side{padding:24px 28px;}
 .lab-divider{border-left:1px solid var(--border);border-right:1px solid var(--border);background:rgba(255,255,255,.01);display:flex;align-items:center;justify-content:center;}
 .lab-divider span{font-family:var(--fh);font-style:italic;font-size:18px;color:var(--muted);font-weight:400;}
-.lab-title{
-  font-family:var(--fh);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid var(--border);
-}
-.lab-title.r{color:var(--red);}.lab-title.g{color:var(--green);}
+.lab-title{font-family:var(--fh);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid var(--border);}
+.lab-title.r{color:var(--red);}.lab-title.g{color:var(--cyan);}
 .lab-title b{color:var(--text);font-weight:500;}
 .lab-title .pill{font-size:9px;font-weight:700;padding:3px 10px;letter-spacing:.1em;border:1px solid;border-radius:var(--r-pill);}
 .lab-title.r .pill{color:var(--red);border-color:var(--red-3);background:var(--red-2);}
-.lab-title.g .pill{color:var(--green);border-color:var(--green-3);background:var(--green-2);}
+.lab-title.g .pill{color:var(--cyan);border-color:var(--cyan-3);background:var(--cyan-2);}
 
 .pool{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px;}
-.tok{
-  position:relative;display:flex;flex-direction:column;align-items:center;
-  padding:10px 4px 10px;border:1px solid var(--border);background:var(--surface);
-  transition:all .35s cubic-bezier(.22,1,.36,1);border-radius:var(--r-md);
-}
-.tok-c{
-  width:36px;height:36px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--fm);font-size:11px;font-weight:500;border:1.5px solid;
-  margin-bottom:6px;transition:all .35s cubic-bezier(.22,1,.36,1);
-}
+.tok{position:relative;display:flex;flex-direction:column;align-items:center;padding:10px 4px 10px;border:1px solid var(--border);background:var(--surface);transition:all .35s cubic-bezier(.22,1,.36,1);border-radius:var(--r-md);}
+.tok-c{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:11px;font-weight:500;border:1.5px solid;margin-bottom:6px;transition:all .35s cubic-bezier(.22,1,.36,1);}
 .tok-p{font-family:var(--fm);font-size:9.5px;color:var(--muted);}
 .tok-bar{position:absolute;bottom:0;left:4px;right:4px;height:2px;background:var(--muted);transition:background .3s;border-radius:var(--r-pill);}
-.tok.t-hi  .tok-c{color:var(--green);border-color:var(--green);background:var(--green-2);}
-.tok.t-hi  .tok-bar{background:var(--green);}
-.tok.t-mid .tok-c{color:var(--orange);border-color:var(--orange);background:var(--orange-2);}
-.tok.t-mid .tok-bar{background:var(--orange);}
+.tok.t-hi  .tok-c{color:var(--cyan);border-color:var(--cyan);background:var(--cyan-2);}
+.tok.t-hi  .tok-bar{background:var(--cyan);}
+.tok.t-mid .tok-c{color:var(--gold);border-color:var(--gold);background:var(--gold-2);}
+.tok.t-mid .tok-bar{background:var(--gold);}
 .tok.t-lo  .tok-c{color:var(--red);border-color:var(--red);background:var(--red-2);}
 .tok.t-lo  .tok-bar{background:var(--red);}
 .tok.eliminated{opacity:.2;filter:grayscale(.6);}
 .tok.eliminated .tok-c{border-style:dashed;}
-.tok.testing{transform:translateY(-3px);border-color:var(--green);box-shadow:0 6px 18px rgba(0,0,0,.5);}
+.tok.testing{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 6px 18px rgba(0,0,0,.5);}
 .tok.testing .tok-c{animation:shimmer .55s ease-in-out;}
-.tok.winner{border-color:var(--green);background:var(--green-2);}
-.tok.winner .tok-c{background:var(--green)!important;color:#000!important;border-color:var(--green)!important;box-shadow:0 0 18px var(--green);animation:winnerPop .5s cubic-bezier(.34,1.56,.64,1);}
+.tok.winner{border-color:var(--cyan);background:var(--cyan-2);}
+.tok.winner .tok-c{background:var(--cyan)!important;color:#000!important;border-color:var(--cyan)!important;box-shadow:0 0 18px var(--cyan);animation:winnerPop .5s cubic-bezier(.34,1.56,.64,1);}
 @keyframes winnerPop{0%{transform:scale(1);}50%{transform:scale(1.22);}100%{transform:scale(1.08);}}
 @keyframes shimmer{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
 
 .algo-step{font-family:var(--fm);font-size:12px;line-height:1.7;color:var(--soft);margin-bottom:14px;min-height:44px;}
-.algo-step b{color:var(--text);font-weight:500;}.algo-step em{color:var(--green);font-style:italic;}
-.coin-stage{
-  display:flex;align-items:center;gap:12px;padding:12px 14px;
-  background:#080b12;border:1px solid var(--border);margin-bottom:12px;min-height:70px;
-  border-radius:var(--r-md);
-}
+.algo-step b{color:var(--text);font-weight:500;}.algo-step em{color:var(--cyan);font-style:italic;}
+.coin-stage{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#060910;border:1px solid var(--border);margin-bottom:12px;min-height:70px;border-radius:var(--r-md);}
 .coin-stage .cs-l{font-family:var(--fm);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--whisper);width:50px;flex-shrink:0;}
-.coin{
-  width:42px;height:42px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--fm);font-size:12px;font-weight:600;
-  border:1.5px solid var(--border-2);background:var(--surface);color:var(--muted);
-  flex-shrink:0;position:relative;transition:all .35s cubic-bezier(.22,1,.36,1);
-}
+.coin{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:12px;font-weight:600;border:1.5px solid var(--border-2);background:var(--surface);color:var(--muted);flex-shrink:0;position:relative;transition:all .35s cubic-bezier(.22,1,.36,1);}
 .coin.flipping{animation:flip .5s cubic-bezier(.4,0,.2,1);}
 @keyframes flip{0%{transform:rotateY(0);}50%{transform:rotateY(180deg);}100%{transform:rotateY(360deg);}}
-.coin.heads{border-color:var(--green);color:#000;background:var(--green);box-shadow:0 0 14px var(--green-3);}
+.coin.heads{border-color:var(--cyan);color:#000;background:var(--cyan);box-shadow:0 0 14px var(--cyan-3);}
 .coin.heads::after{content:'H';}
 .coin.tails{border-color:var(--red);color:var(--red);background:var(--red-2);opacity:.6;}
 .coin.tails::after{content:'T';}
 .coin-result{margin-left:auto;text-align:right;font-family:var(--fm);font-size:11px;color:var(--muted);}
 
-.stats-panel{
-  background:#080b12;border:1px solid var(--border);
-  padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:6px;
-  font-family:var(--fm);font-size:11px;border-radius:var(--r-md);
-}
+.stats-panel{background:#060910;border:1px solid var(--border);padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:var(--fm);font-size:11px;border-radius:var(--r-md);}
 .stats-panel .sp-row{display:flex;justify-content:space-between;}
 .stats-panel .sp-l{color:var(--whisper);letter-spacing:.04em;}
 .stats-panel .sp-v{color:var(--text);font-weight:500;}
-.sp-v.gn{color:var(--green);}.sp-v.rd{color:var(--red);}.sp-v.gd{color:var(--orange);}
-.verdict{
-  margin-top:14px;padding:10px 14px;font-family:var(--fh);font-size:11.5px;font-weight:700;letter-spacing:.04em;
-  display:flex;align-items:center;gap:8px;line-height:1.55;border-radius:var(--r-md);
+.sp-v.gn{color:var(--cyan);}.sp-v.rd{color:var(--red);}.sp-v.gd{color:var(--gold);}
+
+/* Avg quality explanation tooltip */
+.avg-explain{
+  font-family:var(--fm);font-size:10px;color:var(--muted);
+  padding:8px 12px;margin-top:8px;
+  background:var(--card-2);border:1px solid var(--border);
+  border-radius:var(--r-md);line-height:1.6;
 }
+.avg-explain b{color:var(--gold);}
+
+.verdict{margin-top:14px;padding:10px 14px;font-family:var(--fh);font-size:11.5px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:8px;line-height:1.55;border-radius:var(--r-md);}
 .verdict::before{content:'';width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .verdict.bad{background:var(--red-2);border:1px solid rgba(248,113,113,.2);border-left:3px solid var(--red);color:var(--red);}
-.verdict.bad::before{background:var(--red);box-shadow:0 0 8px var(--red-3);}
-.verdict.good{background:var(--green-2);border:1px solid rgba(110,231,183,.15);border-left:3px solid var(--green);color:var(--green);}
-.verdict.good::before{background:var(--green);box-shadow:0 0 8px var(--green-3);}
+.verdict.bad::before{background:var(--red);}
+.verdict.good{background:var(--cyan-2);border:1px solid rgba(56,217,200,.15);border-left:3px solid var(--cyan);color:var(--cyan);}
+.verdict.good::before{background:var(--cyan);}
 
-.lab-foot{
-  padding:14px 28px;border-top:1px solid var(--border);background:var(--surface);
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
-  font-family:var(--fm);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
-}
-.lab-foot .trials b{font-family:var(--fh);font-size:15px;font-weight:700;color:var(--green);margin:0 4px;}
-.aggregated{display:flex;gap:18px;}
+.lab-foot{padding:14px 28px;border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:var(--fm);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.lab-foot .trials b{font-family:var(--fh);font-size:15px;font-weight:700;color:var(--gold);margin:0 4px;}
+.aggregated{display:flex;gap:18px;align-items:center;}
 .agg-cell{display:flex;align-items:baseline;gap:6px;font-family:var(--fm);}
 .agg-cell .agg-num{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--text);}
-.agg-cell.r .agg-num{color:var(--red);}.agg-cell.g .agg-num{color:var(--green);}
+.agg-cell.r .agg-num{color:var(--red);}.agg-cell.g .agg-num{color:var(--cyan);}
+.agg-explain{font-family:var(--fm);font-size:9px;color:var(--whisper);letter-spacing:.05em;margin-left:4px;}
 
-/* ══ §4 MATH ══ */
-.thm{
-  background:var(--card);padding:24px;position:relative;overflow:hidden;
-  display:flex;flex-direction:column;gap:4px;min-height:360px;
-  border-radius:var(--r-lg);border:1px solid var(--border);
-}
-.thm-l{font-family:var(--fm);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:8px;font-weight:500;}
+/* ── §4 MATH ── */
+.thm{background:var(--card);padding:24px;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:4px;min-height:360px;border-radius:var(--r-lg);border:1px solid var(--border);}
+.thm-l{font-family:var(--fm);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-weight:500;}
 .thm h4{font-family:var(--fh);font-size:17px;font-weight:700;color:#fff;margin-bottom:10px;line-height:1.3;}
-.thm h4 em{font-style:italic;font-weight:600;color:var(--green);}
+.thm h4 em{font-style:italic;font-weight:600;color:var(--cyan);}
 .thm p{font-family:var(--fm);font-size:12px;color:var(--soft);line-height:1.7;margin-bottom:7px;}
 .thm p strong{color:var(--text);font-weight:500;}
 
-/* ══ §5 SIMULATION ══ */
+/* ── §5 SIM ── */
 .plot{background:var(--card);padding:18px 22px;border-radius:var(--r-lg);border:1px solid var(--border);}
 .plot-h{font-family:var(--fm);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
 .plot-t{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;letter-spacing:-.005em;}
 .plot canvas{display:block!important;max-height:220px!important;}
 .plot-sm canvas{max-height:150px!important;}
-.finding{
-  background:var(--card);padding:16px 18px;
-  border-left:3px solid var(--fl,var(--green));
-  position:relative;border-radius:var(--r-md);border:1px solid var(--border);
-}
-.finding-num{position:absolute;top:10px;right:14px;font-family:var(--fh);font-size:22px;font-weight:800;color:var(--fl-bg,rgba(110,231,183,.1));font-style:italic;}
-.finding .fl{font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--fl,var(--green));margin-bottom:6px;}
+.finding{background:var(--card);padding:16px 18px;border-left:3px solid var(--fl,var(--cyan));position:relative;border-radius:var(--r-md);border:1px solid var(--border);}
+.finding-num{position:absolute;top:10px;right:14px;font-family:var(--fh);font-size:22px;font-weight:800;color:var(--fl-bg,rgba(56,217,200,.1));font-style:italic;}
+.finding .fl{font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--fl,var(--cyan));margin-bottom:6px;}
 .finding p{font-family:var(--fm);font-size:11.5px;color:var(--soft);line-height:1.6;}
 
-/* ══ §6 RESULTS ══ */
+/* ── §6 RESULTS ── */
 .res-control{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:24px;}
 .dtabs{display:flex;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;}
-.dtab{
-  padding:9px 20px;font-family:var(--fh);font-size:11px;font-weight:700;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:transparent;
-  border:none;cursor:pointer;border-right:1px solid var(--border);transition:all .22s;
-}
+.dtab{padding:9px 20px;font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:transparent;border:none;cursor:pointer;border-right:1px solid var(--border);transition:all .22s;}
 .dtab:last-child{border-right:none;}
-.dtab.active{color:#000;background:var(--green);}
+.dtab.active{color:#000;background:var(--gold);}
 .dtab:hover:not(.active){color:var(--text);background:var(--card-2);}
-.samples-btn{
-  display:flex;align-items:center;gap:9px;height:38px;padding:0 18px;
-  background:transparent;border:1px solid var(--indigo-3);color:var(--indigo);
-  font-family:var(--fh);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  cursor:pointer;transition:all .22s;border-radius:var(--r-md);
-}
-.samples-btn:hover{border-color:var(--indigo);background:var(--indigo-2);}
+.samples-btn{display:flex;align-items:center;gap:9px;height:38px;padding:0 18px;background:transparent;border:1px solid var(--violet-3);color:var(--violet);font-family:var(--fh);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .22s;border-radius:var(--r-md);}
+.samples-btn:hover{border-color:var(--violet);background:var(--violet-2);}
 .samples-btn svg{width:14px;height:14px;}
 .dpanel{display:none;}.dpanel.active{display:block;}
 .res-layout{display:grid;grid-template-columns:168px 1fr;gap:22px;}
 .eps-stack{display:flex;flex-direction:column;gap:6px;}
 .eps-stack .eyebrow{margin-bottom:12px;}
-.eps-btn{
-  padding:12px 14px;background:var(--card);border:1px solid var(--border);
-  font-family:var(--fm);cursor:pointer;text-align:left;
-  transition:all .25s cubic-bezier(.22,1,.36,1);color:var(--muted);
-  position:relative;overflow:hidden;border-radius:var(--r-md);
-}
+.eps-btn{padding:12px 14px;background:var(--card);border:1px solid var(--border);font-family:var(--fm);cursor:pointer;text-align:left;transition:all .25s;color:var(--muted);position:relative;overflow:hidden;border-radius:var(--r-md);}
 .eps-btn::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:transparent;transition:background .25s;border-radius:0 3px 3px 0;}
 .eps-btn .ev{display:block;font-family:var(--fh);font-size:18px;font-weight:700;color:var(--text);line-height:1;margin-bottom:3px;}
 .eps-btn .el{font-family:var(--fm);font-size:9px;letter-spacing:.1em;opacity:.8;}
-.eps-btn.active{color:var(--green);background:var(--green-2);border-color:var(--green-3);}
-.eps-btn.active::before{background:var(--green);}
-.eps-btn.active .ev{color:var(--green);}
+.eps-btn.active{color:var(--gold);background:var(--gold-2);border-color:var(--gold-3);}
+.eps-btn.active::before{background:var(--gold);}
+.eps-btn.active .ev{color:var(--gold);}
 .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .metric-cell{background:var(--card);padding:14px 18px;border-radius:var(--r-md);border:1px solid var(--border);}
 .metric-cell .mt{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
 .metric-cell .ms{font-family:var(--fm);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
 .metric-cell canvas{max-height:130px!important;display:block!important;}
-.note{
-  margin-top:22px;padding:12px 16px;font-family:var(--fm);font-size:12px;color:var(--soft);line-height:1.65;
-  background:var(--indigo-2);border:1px solid rgba(129,140,248,.18);
-  border-left:3px solid var(--indigo);border-radius:0 var(--r-md) var(--r-md) 0;
-}
+.note{margin-top:22px;padding:12px 16px;font-family:var(--fm);font-size:12px;color:var(--soft);line-height:1.65;background:var(--violet-2);border:1px solid rgba(167,139,250,.18);border-left:3px solid var(--violet);border-radius:0 var(--r-md) var(--r-md) 0;}
 .note strong{color:var(--text);font-weight:500;}
-.note code{font-family:var(--fm);font-size:11px;color:var(--green);background:rgba(110,231,183,.06);padding:1px 5px;border-radius:4px;}
+.note code{font-family:var(--fm);font-size:11px;color:var(--cyan);background:rgba(56,217,200,.06);padding:1px 5px;border-radius:4px;}
 
-/* ══ §7 FUTURE ══ */
+/* ── §7 FUTURE ── */
 .fc{
   background:var(--card);padding:26px 24px;display:flex;flex-direction:column;gap:10px;
-  position:relative;overflow:hidden;min-height:240px;
+  position:relative;overflow:hidden;min-height:220px;
   border-radius:var(--r-lg);border:1px solid var(--border);
+  transition:all .3s cubic-bezier(.22,1,.36,1);
 }
+.fc-expandable{cursor:pointer;}
+.fc-expandable:hover{border-color:var(--border-2);background:var(--card-2);}
 .fc-step{position:absolute;top:18px;right:22px;font-family:var(--fh);font-size:38px;font-weight:800;color:rgba(255,255,255,.04);line-height:1;}
-.fc-status{
-  font-family:var(--fh);font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
-  padding:4px 12px;width:fit-content;border:1px solid;border-radius:var(--r-pill);
-}
-.fc-status.done{color:var(--green);border-color:var(--green-3);background:var(--green-2);}
-.fc-status.prog{color:var(--indigo);border-color:var(--indigo-3);background:var(--indigo-2);}
-.fc-status.plan{color:var(--orange);border-color:var(--orange-3);background:var(--orange-2);}
+.fc-status{font-family:var(--fh);font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:4px 12px;width:fit-content;border:1px solid;border-radius:var(--r-pill);}
+.fc-status.done{color:var(--cyan);border-color:var(--cyan-3);background:var(--cyan-2);}
+.fc-status.prog{color:var(--violet);border-color:var(--violet-3);background:var(--violet-2);}
+.fc-status.plan{color:var(--gold);border-color:var(--gold-3);background:var(--gold-2);}
 .fc h3{font-family:var(--fh);font-size:18px;font-weight:700;color:#fff;line-height:1.3;}
-.fc h3 em{font-style:italic;font-weight:600;color:var(--green);}
+.fc h3 em{font-style:italic;font-weight:600;color:var(--cyan);}
 .fc p{font-family:var(--fm);font-size:12px;color:var(--soft);line-height:1.7;}
+.fc-expand-hint{font-family:var(--fm);font-size:9px;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;display:flex;align-items:center;gap:6px;margin-top:4px;opacity:.7;}
+.fc-expand-hint::before{content:'▸';font-size:8px;}
+.fc-expanded .fc-expand-hint::before{content:'▾';}
+
+/* Expand panels */
+.fc-panel{display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:14px;}
+.fc-expanded .fc-panel{display:block;}
+
+/* Math expression for loss fn */
+.math-block{background:#060910;border:1px solid var(--border);padding:16px 18px;border-radius:var(--r-md);font-family:var(--fm);font-size:12.5px;color:var(--text);line-height:2.1;}
+.math-block .mrow{display:flex;align-items:baseline;gap:10px;padding:3px 0;}
+.math-block .mk{color:var(--muted);width:160px;flex-shrink:0;font-size:11px;}
+.math-block .mv{color:var(--cyan);}
+.math-block .mn{color:var(--gold);}
+.math-block .ms-c{color:var(--violet);}
+.math-block .mc{color:var(--muted);font-style:italic;font-size:11px;}
+.math-title{font-family:var(--fh);font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
+
+/* InvisibleInk comparison table */
+.cmp-table{width:100%;border-collapse:collapse;font-family:var(--fm);font-size:11.5px;margin-top:6px;}
+.cmp-table thead tr{background:var(--card-2);border-bottom:2px solid var(--gold-3);}
+.cmp-table th{padding:10px 12px;text-align:left;font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.cmp-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--soft);}
+.cmp-table tr:last-child td{border-bottom:none;}
+.cmp-table tr.our-row td{color:var(--gold);background:var(--gold-2);font-weight:500;}
+.cmp-table tr.our-row td:first-child{font-family:var(--fh);font-weight:700;color:var(--gold);}
+.cmp-table .val-hi{color:var(--cyan);font-weight:600;}
+.cmp-table .val-lo{color:var(--red);}
+.cmp-table .qmark{color:var(--gold);font-family:var(--fh);font-size:14px;font-weight:700;}
+.cmp-badge{display:inline-block;padding:2px 7px;border-radius:var(--r-pill);font-family:var(--fh);font-size:9px;font-weight:700;letter-spacing:.08em;}
+.cmp-badge.b{background:var(--cyan-2);color:var(--cyan);border:1px solid var(--cyan-3);}
+.cmp-badge.s{background:rgba(255,255,255,.04);color:var(--muted);border:1px solid var(--border);}
+
+/* colophon */
 .colophon{display:grid;grid-template-columns:1fr 1.4fr;gap:36px;border-top:1px solid var(--border);padding-top:28px;margin-top:30px;}
 .colophon .eyebrow{margin-bottom:14px;}
 .team{display:flex;flex-direction:column;gap:12px;}
 .team-mem{display:grid;grid-template-columns:80px 1fr;gap:14px;align-items:baseline;padding-bottom:10px;border-bottom:1px solid var(--border);}
 .team-mem:last-child{border-bottom:none;}
-.team-mem .roll{font-family:var(--fm);font-size:10px;letter-spacing:.14em;color:var(--green);}
+.team-mem .roll{font-family:var(--fm);font-size:10px;letter-spacing:.14em;color:var(--gold);}
 .team-mem .name{font-family:var(--fh);font-size:14px;font-weight:600;color:var(--text);}
 .refs{display:flex;flex-direction:column;gap:10px;}
 .ref-item{display:grid;grid-template-columns:24px 1fr;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border);font-family:var(--fm);font-size:11.5px;line-height:1.55;color:var(--soft);}
 .ref-item:last-child{border-bottom:none;}
-.ref-item .num{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--green);}
+.ref-item .num{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--gold);}
 .ref-item em{color:var(--text);font-style:italic;font-weight:500;}
 
-/* ══ POPUP ══ */
-.pop{
-  position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  display:none;align-items:center;justify-content:center;padding:24px;
-}
+/* ── POPUP ── */
+.pop{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:24px;}
 .pop.open{display:flex;}
-.pop-box{
-  background:var(--surface);border:1px solid var(--border-2);
-  max-width:920px;width:100%;max-height:90vh;
-  overflow-y:auto;position:relative;
-  animation:popIn .35s cubic-bezier(.22,1,.36,1);
-  border-radius:var(--r-xl);
-}
+.pop-box{background:var(--surface);border:1px solid var(--border-2);max-width:920px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:popIn .35s cubic-bezier(.22,1,.36,1);border-radius:var(--r-xl);}
 @keyframes popIn{from{opacity:0;transform:scale(.97) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
-.pop-head{
-  padding:20px 26px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:14px;
-  position:sticky;top:0;background:var(--card);z-index:10;
-  border-radius:var(--r-xl) var(--r-xl) 0 0;
-}
+.pop-head{padding:20px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;background:var(--card);z-index:10;border-radius:var(--r-xl) var(--r-xl) 0 0;}
 .pop-head h3{font-family:var(--fh);font-size:17px;font-weight:700;color:#fff;flex:1;}
-.pop-head h3 em{font-style:italic;font-weight:600;color:var(--green);}
-.pop-close{
-  width:30px;height:30px;border-radius:var(--r-md);
-  border:1px solid var(--border-2);background:transparent;
-  color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:14px;transition:all .22s;
-}
+.pop-head h3 em{font-style:italic;font-weight:600;color:var(--cyan);}
+.pop-close{width:30px;height:30px;border-radius:var(--r-md);border:1px solid var(--border-2);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .22s;}
 .pop-close:hover{border-color:var(--red);color:var(--red);}
 .pop-nav{display:flex;align-items:center;gap:8px;padding:14px 26px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
 .pop-nav-l{font-family:var(--fm);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);}
-.pop-sel{
-  padding:5px 14px;font-family:var(--fh);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--muted);background:transparent;border:1px solid var(--border-2);cursor:pointer;transition:all .2s;border-radius:var(--r-pill);
-}
-.pop-sel.active{color:var(--green);border-color:var(--green-3);background:var(--green-2);}
+.pop-sel{padding:5px 14px;font-family:var(--fh);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border-2);cursor:pointer;transition:all .2s;border-radius:var(--r-pill);}
+.pop-sel.active{color:var(--cyan);border-color:var(--cyan-3);background:var(--cyan-2);}
 .pop-sel:hover:not(.active){color:var(--text);}
 .pop-body{padding:22px 26px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .pop-section h4{font-family:var(--fm);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--border);font-weight:500;}
 .pop-section.ref h4{color:var(--soft);}.pop-section.pub h4{color:var(--muted);}
-.pop-section.sm  h4{color:var(--red);}.pop-section.rnm h4{color:var(--green);}
+.pop-section.sm  h4{color:var(--red);}.pop-section.rnm h4{color:var(--cyan);}
 .txt-block{font-family:var(--fm);font-size:12.5px;line-height:1.75;color:var(--soft);background:rgba(255,255,255,.02);border:1px solid var(--border);padding:12px 14px;min-height:100px;border-radius:var(--r-md);}
 .pop-comment{padding:18px 26px 22px;border-top:1px solid var(--border);}
-.pop-comment .cl{font-family:var(--fm);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--indigo);margin-bottom:8px;display:flex;align-items:center;gap:9px;}
-.pop-comment .cl::before{content:'';width:18px;height:1px;background:var(--indigo);}
-.pop-comment .cb{background:var(--indigo-2);border-left:2px solid var(--indigo);padding:12px 16px;font-family:var(--fm);font-size:12px;color:var(--soft);line-height:1.7;border-radius:0 var(--r-md) var(--r-md) 0;}
+.pop-comment .cl{font-family:var(--fm);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--violet);margin-bottom:8px;display:flex;align-items:center;gap:9px;}
+.pop-comment .cl::before{content:'';width:18px;height:1px;background:var(--violet);}
+.pop-comment .cb{background:var(--violet-2);border-left:2px solid var(--violet);padding:12px 16px;font-family:var(--fm);font-size:12px;color:var(--soft);line-height:1.7;border-radius:0 var(--r-md) var(--r-md) 0;}
 
-/* ══ RESPONSIVE ══ */
+/* ── RESPONSIVE ── */
 @media(max-width:1024px){
   .page{padding:0 32px 48px;}
   .hero{grid-template-columns:1fr;gap:32px;}
@@ -598,18 +486,17 @@ body::after{
 @media(max-width:720px){
   .page{padding:0 22px 40px;}
   .topbar{padding:0 22px;}
-  .nav-bar .nav-inner{gap:8px;}
+  .nav-inner{gap:5px;}
   .nav-section{min-width:0;padding:0 12px;gap:10px;}
-  .nav-section .ns-counter{display:none;}
-  .nav-progress-mini{display:none;}
   .head{grid-template-columns:1fr;}
   .head-right{text-align:left;}
   .stats{grid-template-columns:1fr 1fr;}
-  .g3,.g4,.g5{grid-template-columns:1fr;}
+  .g3,.g4{grid-template-columns:1fr;}
   .pop-body{grid-template-columns:1fr;}
   .hero-meta{grid-template-columns:1fr;}
   .hero-meta-cell{border-right:none;border-bottom:1px solid var(--border);}
-  .tb-meta span:not(.tb-dot){display:none;}
+  .hero-team{flex-wrap:wrap;}
+  .inav-btn{width:34px;}
 }
 </style>
 </head>
@@ -648,7 +535,7 @@ body::after{
 
 <!-- TOPBAR -->
 <header class="topbar" id="topbar">
-  <div class="tb-brand">DA5001 · IIT Madras · 2025<span class="tb-brand-sep"></span><i>RNM-Exponential</i></div>
+  <div class="tb-brand">DA5001 · IIT Madras · 2026<span class="tb-brand-sep"></span><i>RNM-Exponential</i></div>
   <div class="tb-meta">
     <span class="tb-dot">DP Decoding Active</span>
     <span>DA24B016 · DA24B028 · DA24B050</span>
@@ -662,14 +549,26 @@ body::after{
 <section class="scene active" id="sec-0">
   <div class="page">
     <div class="hero">
-      <div class="reveal" style="display:flex;flex-direction:column;gap:22px;">
-        <div class="hero-folio"><span>Folio I</span><span class="ff-rule"></span><b>Differentially-Private LLM Decoding</b></div>
-        <h1 class="hero-h1">Sharper<br><span class="h-soft">sampling,</span><br><span class="h-glow">safer text.</span></h1>
+      <div class="reveal" style="display:flex;flex-direction:column;gap:20px;">
+        <div class="hero-folio"><span>DA5001 · IIT Madras</span><span class="ff-rule"></span><b>2026</b></div>
+        <h1 class="hero-h1">
+          <span class="h-project">RNM-Exponential</span>
+          <span class="h-sub">Sharper Sampling · Safer Text</span>
+        </h1>
         <p class="hero-lede">Softmax assigns probability to <strong>every token</strong> in the vocabulary — even garbage ones. Under differential privacy, this degrades badly. We replace the final sampling step with <em>Report-Noisy-Max using Exponential noise</em>, and prove it is <strong>strictly better</strong>.</p>
         <div class="hero-chips">
           <span class="tag tag-g">RNM-Exponential</span>
           <span class="tag tag-i">ε-DP Guaranteed</span>
           <span class="tag tag-o">InvisibleInk Extension</span>
+        </div>
+        <!-- Team intro right on hero -->
+        <div>
+          <div class="eyebrow" style="margin-bottom:10px;">The team</div>
+          <div class="hero-team">
+            <div class="hero-team-mem"><div class="av">PR</div><div><div class="nm">M. M. Pruthvi Raj</div><div class="id">DA24B016</div></div></div>
+            <div class="hero-team-mem"><div class="av">AA</div><div><div class="nm">Aakash Aadhithya</div><div class="id">DA24B028</div></div></div>
+            <div class="hero-team-mem"><div class="av">RV</div><div><div class="nm">Rishikesh V</div><div class="id">DA24B050</div></div></div>
+          </div>
         </div>
         <div class="hero-meta">
           <div class="hero-meta-cell"><div class="l">Datasets</div><div class="v">TAB · Yelp · PubMed</div></div>
@@ -716,7 +615,7 @@ body::after{
   <div class="page">
     <header class="head reveal">
       <div><div class="head-meta"><span class="chap-num">§ 01</span><span class="chap-rule"></span><span>The motivation</span></div><h1>Why <em>Softmax fails</em> <span class="amp">under</span> privacy</h1></div>
-      <div class="head-right">Section 01 / 07<br>Three problems</div>
+      <div class="head-right">Slide 02 / 08<br>Three problems</div>
     </header>
     <div class="g3 reveal">
       <div class="card card-hl card-hl-r"><div class="card-num">01</div><div class="eyebrow">Problem · Training</div><h3>LLMs <em>memorize</em></h3><p>Large language models trained on sensitive corpora can reproduce verbatim text — exposing private information through <strong>membership inference</strong> and <strong>data extraction attacks</strong> at inference time.</p></div>
@@ -731,7 +630,7 @@ body::after{
   <div class="page">
     <header class="head reveal">
       <div><div class="head-meta"><span class="chap-num">§ 02</span><span class="chap-rule"></span><span>Our solution</span></div><h1>Replace Gumbel <span class="amp">with</span> <em>Exponential</em></h1></div>
-      <div class="head-right">Section 02 / 07<br>Drop-in replacement</div>
+      <div class="head-right">Slide 03 / 08<br>Drop-in replacement</div>
     </header>
     <div class="g2 reveal">
       <div class="card card-vl" style="padding:30px;">
@@ -759,7 +658,7 @@ body::after{
   <div class="page">
     <header class="head reveal">
       <div><div class="head-meta"><span class="chap-num">§ 03</span><span class="chap-rule"></span><span>The intuition</span></div><h1>Sampling <em>with</em> <span class="amp">vs</span> <em>without</em> replacement</h1></div>
-      <div class="head-right">Section 03 / 07<br>Live simulation</div>
+      <div class="head-right">Slide 04 / 08<br>Live simulation</div>
     </header>
     <div class="intuition-bar reveal">
       <div class="lede"><b>Key insight:</b>&nbsp; Both mechanisms work like biased coin flips. The only difference is whether rejected tokens go back into the pool — and that single change is what gives RNM-Exponential its provable advantage.</div>
@@ -780,19 +679,23 @@ body::after{
         <div class="lab-side">
           <div class="lab-title r"><span>Softmax · Gumbel-Max</span><span class="pill">with replacement</span></div>
           <div class="pool" id="pool-sm">
-            <div class="tok t-hi" data-i="0"><div class="tok-c">T₁</div><div class="tok-p">.40</div><div class="tok-bar" style="width:40%"></div></div>
-            <div class="tok t-hi" data-i="1"><div class="tok-c">T₂</div><div class="tok-p">.28</div><div class="tok-bar" style="width:28%"></div></div>
-            <div class="tok t-mid" data-i="2"><div class="tok-c">T₃</div><div class="tok-p">.16</div><div class="tok-bar" style="width:16%"></div></div>
-            <div class="tok t-lo" data-i="3"><div class="tok-c">T₄</div><div class="tok-p">.09</div><div class="tok-bar" style="width:9%"></div></div>
-            <div class="tok t-lo" data-i="4"><div class="tok-c">T₅</div><div class="tok-p">.07</div><div class="tok-bar" style="width:7%"></div></div>
+            <div class="tok t-hi" data-i="0"><div class="tok-c">T₁</div><div class="tok-p">4.0</div><div class="tok-bar"></div></div>
+            <div class="tok t-hi" data-i="1"><div class="tok-c">T₂</div><div class="tok-p">3.5</div><div class="tok-bar"></div></div>
+            <div class="tok t-mid" data-i="2"><div class="tok-c">T₃</div><div class="tok-p">2.8</div><div class="tok-bar"></div></div>
+            <div class="tok t-lo" data-i="3"><div class="tok-c">T₄</div><div class="tok-p">2.2</div><div class="tok-bar"></div></div>
+            <div class="tok t-lo" data-i="4"><div class="tok-c">T₅</div><div class="tok-p">1.9</div><div class="tok-bar"></div></div>
           </div>
           <p class="algo-step" id="step-sm">Sample categorically from p ∝ exp(ε · q / 2Δ). One draw, with replacement — every token is eligible <em>every time</em>.</p>
           <div class="coin-stage"><div class="cs-l">Coin</div><div class="coin" id="coin-sm"></div><div class="coin-result" id="result-sm"></div></div>
           <div class="stats-panel">
             <div class="sp-row"><span class="sp-l">Trials</span><span class="sp-v" id="sm-trials">0</span></div>
-            <div class="sp-row"><span class="sp-l">Tail picks</span><span class="sp-v rd" id="sm-tail">0</span></div>
-            <div class="sp-row"><span class="sp-l">Head picks</span><span class="sp-v gn" id="sm-head">0</span></div>
+            <div class="sp-row"><span class="sp-l">Tail picks (T₃–T₅)</span><span class="sp-v rd" id="sm-tail">0</span></div>
+            <div class="sp-row"><span class="sp-l">Head picks (T₁–T₂)</span><span class="sp-v gn" id="sm-head">0</span></div>
             <div class="sp-row"><span class="sp-l">Avg score</span><span class="sp-v gd" id="sm-quality">—</span></div>
+          </div>
+          <div class="avg-explain">
+            <b>Avg score</b> = mean logit of selected tokens (higher = better quality pick).<br>
+            T₁=4.0, T₂=3.5, T₃=2.8, T₄=2.2, T₅=1.9 — <b>max possible = 4.0</b>
           </div>
           <div class="verdict bad">Tail tokens persist · bad choices recur · quality degrades</div>
         </div>
@@ -800,19 +703,22 @@ body::after{
         <div class="lab-side">
           <div class="lab-title g"><span>RNM-Exp · Permute-and-Flip</span><span class="pill">without replacement</span></div>
           <div class="pool" id="pool-rnm">
-            <div class="tok t-hi" data-i="0"><div class="tok-c">T₁</div><div class="tok-p">.40</div><div class="tok-bar" style="width:40%"></div></div>
-            <div class="tok t-hi" data-i="1"><div class="tok-c">T₂</div><div class="tok-p">.28</div><div class="tok-bar" style="width:28%"></div></div>
-            <div class="tok t-mid" data-i="2"><div class="tok-c">T₃</div><div class="tok-p">.16</div><div class="tok-bar" style="width:16%"></div></div>
-            <div class="tok t-lo" data-i="3"><div class="tok-c">T₄</div><div class="tok-p">.09</div><div class="tok-bar" style="width:9%"></div></div>
-            <div class="tok t-lo" data-i="4"><div class="tok-c">T₅</div><div class="tok-p">.07</div><div class="tok-bar" style="width:7%"></div></div>
+            <div class="tok t-hi" data-i="0"><div class="tok-c">T₁</div><div class="tok-p">4.0</div><div class="tok-bar"></div></div>
+            <div class="tok t-hi" data-i="1"><div class="tok-c">T₂</div><div class="tok-p">3.5</div><div class="tok-bar"></div></div>
+            <div class="tok t-mid" data-i="2"><div class="tok-c">T₃</div><div class="tok-p">2.8</div><div class="tok-bar"></div></div>
+            <div class="tok t-lo" data-i="3"><div class="tok-c">T₄</div><div class="tok-p">2.2</div><div class="tok-bar"></div></div>
+            <div class="tok t-lo" data-i="4"><div class="tok-c">T₅</div><div class="tok-p">1.9</div><div class="tok-bar"></div></div>
           </div>
-          <p class="algo-step" id="step-rnm">Permute uniformly. Walk the order; flip a biased coin per token with p<sub>i</sub> = exp(−ε(q*−q<sub>i</sub>)/2Δ). <em>Heads → return.</em> <em>Tails → eliminate.</em></p>
+          <p class="algo-step" id="step-rnm">Permute uniformly. Walk the order; flip a biased coin per token with p<sub>i</sub> = exp(−ε(q*−q<sub>i</sub>)/2Δ). <em>Heads → return.</em> <em>Tails → eliminate permanently.</em></p>
           <div class="coin-stage"><div class="cs-l">Coin</div><div class="coin" id="coin-rnm"></div><div class="coin-result" id="result-rnm"></div></div>
           <div class="stats-panel">
             <div class="sp-row"><span class="sp-l">Trials</span><span class="sp-v" id="rnm-trials">0</span></div>
-            <div class="sp-row"><span class="sp-l">Tail picks</span><span class="sp-v rd" id="rnm-tail">0</span></div>
-            <div class="sp-row"><span class="sp-l">Head picks</span><span class="sp-v gn" id="rnm-head">0</span></div>
+            <div class="sp-row"><span class="sp-l">Tail picks (T₃–T₅)</span><span class="sp-v rd" id="rnm-tail">0</span></div>
+            <div class="sp-row"><span class="sp-l">Head picks (T₁–T₂)</span><span class="sp-v gn" id="rnm-head">0</span></div>
             <div class="sp-row"><span class="sp-l">Avg score</span><span class="sp-v gd" id="rnm-quality">—</span></div>
+          </div>
+          <div class="avg-explain">
+            <b>Avg score</b> = mean logit of selected tokens. Once a token is flipped tails, it's <b>permanently removed</b> — preventing repeated bad choices. The last token always has coin p = 1 (guarantee of termination).
           </div>
           <div class="verdict good">Tail tokens eliminated · head tokens win · quality preserved</div>
         </div>
@@ -820,8 +726,9 @@ body::after{
       <div class="lab-foot">
         <span class="trials">Total trials: <b id="total-trials">0</b></span>
         <div class="aggregated">
-          <div class="agg-cell r"><span class="agg-num" id="agg-sm-q">—</span><span>SM avg</span></div>
-          <div class="agg-cell g"><span class="agg-num" id="agg-rnm-q">—</span><span>RNM avg</span></div>
+          <div class="agg-cell r"><span class="agg-num" id="agg-sm-q">—</span><span>SM avg score</span></div>
+          <div class="agg-cell g"><span class="agg-num" id="agg-rnm-q">—</span><span>RNM avg score</span></div>
+          <span class="agg-explain">(logit-weighted; max = 4.0)</span>
         </div>
       </div>
     </div>
@@ -833,7 +740,7 @@ body::after{
   <div class="page">
     <header class="head reveal">
       <div><div class="head-meta"><span class="chap-num">§ 04</span><span class="chap-rule"></span><span>Mathematical foundation</span></div><h1>Three theorems, <em>one conclusion</em></h1></div>
-      <div class="head-right">Section 04 / 07<br>Theory</div>
+      <div class="head-right">Slide 05 / 08<br>Theory</div>
     </header>
     <div class="g3 reveal">
       <div class="thm card-hl card-hl-g">
@@ -866,7 +773,7 @@ body::after{
   <div class="page">
     <header class="head reveal">
       <div><div class="head-meta"><span class="chap-num">§ 05</span><span class="chap-rule"></span><span>Toy simulation</span></div><h1>Theory <em>meets</em> measurement</h1></div>
-      <div class="head-right">Section 05 / 07<br>20,000 trials · ε = 2.0</div>
+      <div class="head-right">Slide 06 / 08<br>20,000 trials · ε = 2.0</div>
     </header>
     <div class="g2 reveal" style="margin-bottom:12px;">
       <div class="plot"><div class="plot-h">Empirical · 20k trials</div><div class="plot-t">Selection probability vs. token rank</div><canvas id="chart-prob"></canvas></div>
@@ -876,10 +783,10 @@ body::after{
       <div class="plot plot-sm"><div class="plot-h">Asymptotic comparison</div><div class="plot-t">Worst-case expected error vs. vocabulary size n</div><canvas id="chart-scale"></canvas></div>
     </div>
     <div class="g4 reveal">
-      <div class="finding" style="--fl:var(--green);--fl-bg:rgba(110,231,183,.1);"><div class="finding-num">i</div><div class="fl">Equivalence verified</div><p>Softmax ≡ Gumbel-Max. RNM-Exp ≡ PF. Both match exactly across 20,000 trials.</p></div>
+      <div class="finding" style="--fl:var(--cyan);--fl-bg:rgba(56,217,200,.1);"><div class="finding-num">i</div><div class="fl">Equivalence verified</div><p>Softmax ≡ Gumbel-Max. RNM-Exp ≡ PF. Both match exactly across 20,000 trials.</p></div>
       <div class="finding" style="--fl:#4ade80;--fl-bg:rgba(74,222,128,.1);"><div class="finding-num">ii</div><div class="fl">Utility gap</div><p>PF/RNM consistently selects higher-scoring tokens. Gap widens as privacy budget tightens.</p></div>
-      <div class="finding" style="--fl:var(--indigo);--fl-bg:rgba(129,140,248,.1);"><div class="finding-num">iii</div><div class="fl">Tail suppression</div><p>Softmax gives persistent mass to tail tokens. PF aggressively truncates — low-ranked tokens approach zero.</p></div>
-      <div class="finding" style="--fl:var(--orange);--fl-bg:rgba(251,146,60,.1);"><div class="finding-num">iv</div><div class="fl">2× error reduction</div><p>PF error ≤ EM error across all vocab sizes. Ratio converges to exactly 2 as p → 0, validating Thm. 3.</p></div>
+      <div class="finding" style="--fl:var(--violet);--fl-bg:rgba(167,139,250,.1);"><div class="finding-num">iii</div><div class="fl">Tail suppression</div><p>Softmax gives persistent mass to tail tokens. PF aggressively truncates — low-ranked tokens approach zero.</p></div>
+      <div class="finding" style="--fl:var(--gold);--fl-bg:rgba(245,200,66,.1);"><div class="finding-num">iv</div><div class="fl">2× error reduction</div><p>PF error ≤ EM error across all vocab sizes. Ratio converges to exactly 2 as p → 0, validating Thm. 3.</p></div>
     </div>
   </div>
 </section>
@@ -889,7 +796,7 @@ body::after{
   <div class="page">
     <header class="head reveal">
       <div><div class="head-meta"><span class="chap-num">§ 06</span><span class="chap-rule"></span><span>Real-data results</span></div><h1>From theorem <em>to</em> production</h1></div>
-      <div class="head-right">Section 06 / 07<br>TAB · Yelp · PubMed</div>
+      <div class="head-right">Slide 07 / 08<br>TAB · Yelp · PubMed</div>
     </header>
     <div class="res-control reveal">
       <div class="dtabs">
@@ -959,31 +866,123 @@ body::after{
   <div class="page">
     <header class="head reveal">
       <div><div class="head-meta"><span class="chap-num">§ 07</span><span class="chap-rule"></span><span>The road ahead</span></div><h1>From <em>theorem</em> to artefact</h1></div>
-      <div class="head-right">Section 07 / 07<br>Completion plan</div>
+      <div class="head-right">Slide 08 / 08<br>Completion plan</div>
     </header>
     <div class="g2 reveal" style="margin-bottom:28px;">
-      <div class="fc card-hl card-hl-g"><span class="fc-step">01</span><span class="fc-status done">Complete</span><h3>Theory <em>&</em> simulation</h3><p>Proved ε-DP guarantee, established PF equivalence, derived utility bounds, ran 20,000-trial toy simulations confirming all theoretical claims including the 2× error reduction limit.</p></div>
-      <div class="fc card-hl card-hl-i"><span class="fc-step">02</span><span class="fc-status prog">In progress</span><h3>Real-data <em>evaluation</em></h3><p>Running RNM-Exponential and Softmax on TAB, Yelp, and PubMed at three ε values. Collecting PPL, BERTScore, MAUVE, Rep-3, and TTR for both mechanisms.</p></div>
-      <div class="fc card-hl card-hl-i"><span class="fc-step">03</span><span class="fc-status prog">In progress</span><h3>InvisibleInk <em>integration</em></h3><p>Reproducing the exact experimental setup from Vinod et al. (2025) — same datasets, parameters, and comparison table — with RNM-Exp as a new row.</p></div>
-      <div class="fc card-hl card-hl-o"><span class="fc-step">04</span><span class="fc-status plan">If needed</span><h3>Loss-function <em>alignment</em></h3><p>If RNM-Exp underperforms despite theoretical superiority, we'll design a numerically stable loss function under Exponential noise scaling 𝒪(|V|) with vocabulary size.</p></div>
-    </div>
-    <div class="colophon reveal">
-      <div>
-        <div class="eyebrow">The team</div>
-        <div class="team">
-          <div class="team-mem"><div class="roll">DA24B016</div><div class="name">M. M. Pruthvi Raj</div></div>
-          <div class="team-mem"><div class="roll">DA24B028</div><div class="name">Aakash Aadhithya</div></div>
-          <div class="team-mem"><div class="roll">DA24B050</div><div class="name">Rishikesh V</div></div>
+
+      <!-- Card 1: Complete -->
+      <div class="fc card-hl card-hl-g">
+        <span class="fc-step">01</span>
+        <span class="fc-status done">✓ Complete</span>
+        <h3>Theory <em>&</em> simulation</h3>
+        <p>Proved ε-DP guarantee, established PF equivalence, derived utility bounds, ran 20,000-trial toy simulations confirming all theoretical claims including the 2× error reduction limit.</p>
+      </div>
+
+      <!-- Card 2: Complete -->
+      <div class="fc card-hl card-hl-g">
+        <span class="fc-step">02</span>
+        <span class="fc-status done">✓ Complete</span>
+        <h3>Real-data <em>evaluation</em></h3>
+        <p>Running RNM-Exponential and Softmax on TAB, Yelp, and PubMed at three ε values. Collecting PPL, BERTScore, MAUVE, Rep-3, and TTR for both mechanisms.</p>
+      </div>
+
+      <!-- Card 3: InvisibleInk Integration (expandable with table) -->
+      <div class="fc card-hl card-hl-i fc-expandable" id="fc-invinkt" onclick="toggleFC('fc-invinkt')">
+        <span class="fc-step">03</span>
+        <span class="fc-status prog">In progress</span>
+        <h3>InvisibleInk <em>integration</em></h3>
+        <p>Reproducing the exact experimental setup from Vinod et al. (2025) — same datasets, parameters, and comparison table — with RNM-Exp as a new row.</p>
+        <div class="fc-expand-hint">Click to view comparison table</div>
+        <div class="fc-panel">
+          <div class="math-title" style="color:var(--violet);margin-bottom:8px;">InvisibleInk benchmark — TAB dataset (Acc ↑, Score L₁ ↓)</div>
+          <div style="overflow-x:auto;">
+            <table class="cmp-table">
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Batch B</th>
+                  <th>Accuracy ↑</th>
+                  <th>Top-5 Acc ↑</th>
+                  <th>Cat. Acc ↑</th>
+                  <th>Score Acc ↑</th>
+                  <th>Score L₁ ↓</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="cmp-badge b">InvisibleInk</span></td>
+                  <td>7</td>
+                  <td class="val-hi">32.98</td>
+                  <td class="val-hi">72.16</td>
+                  <td class="val-hi">64.90</td>
+                  <td class="val-hi">52.2</td>
+                  <td class="val-hi">0.652</td>
+                </tr>
+                <tr>
+                  <td><span class="cmp-badge s">Amin et al. [13]</span></td>
+                  <td>127</td>
+                  <td>29.44</td>
+                  <td>64.56</td>
+                  <td>60.18</td>
+                  <td>46.64</td>
+                  <td>0.748</td>
+                </tr>
+                <tr>
+                  <td><span class="cmp-badge s">AdaPMixED [19]</span></td>
+                  <td>31</td>
+                  <td class="val-lo">7.44</td>
+                  <td class="val-lo">34.72</td>
+                  <td>56.82</td>
+                  <td class="val-lo">15.44</td>
+                  <td class="val-lo">1.858</td>
+                </tr>
+                <tr class="our-row">
+                  <td>RNM-Exponential <span style="font-size:9px;opacity:.7;">(ours)</span></td>
+                  <td>7</td>
+                  <td class="qmark">?</td>
+                  <td class="qmark">?</td>
+                  <td class="qmark">?</td>
+                  <td class="qmark">?</td>
+                  <td class="qmark">?</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="font-family:var(--fm);font-size:10.5px;color:var(--muted);margin-top:8px;">Results pending experimental runs. Values will replace ? marks upon completion.</p>
         </div>
       </div>
-      <div>
-        <div class="eyebrow">Key references</div>
-        <div class="refs">
-          <div class="ref-item"><div class="num">1.</div><div>Vinod, Pillutla &amp; Thakurta. <em>InvisibleInk: High-Utility and Low-Cost Differentially Private Decoding</em>. arXiv:2507.02974, 2025.</div></div>
-          <div class="ref-item"><div class="num">2.</div><div>McKenna &amp; Sheldon. <em>Permute-and-Flip: A New Mechanism for Differentially Private Selection</em>. NeurIPS 2020.</div></div>
-          <div class="ref-item"><div class="num">3.</div><div>Ding et al. <em>Permute-and-Flip ≡ Report-Noisy-Max with Exponential noise</em>. arXiv:2105.07260, 2021.</div></div>
-          <div class="ref-item"><div class="num">4.</div><div>Zhao, Li &amp; Wang. <em>Optimal stable decoder under privacy constraints</em>. ICLR 2025.</div></div>
+
+      <!-- Card 4: Loss function (expandable with math) -->
+      <div class="fc card-hl card-hl-o fc-expandable" id="fc-loss" onclick="toggleFC('fc-loss')">
+        <span class="fc-step">04</span>
+        <span class="fc-status prog">Started</span>
+        <h3>Loss-function <em>alignment</em></h3>
+        <p>If RNM-Exp underperforms despite theoretical superiority, we'll design a numerically stable loss function under Exponential noise scaling 𝒪(|V|) with vocabulary size.</p>
+        <div class="fc-expand-hint">Click to view proposed formulation</div>
+        <div class="fc-panel">
+          <div class="math-title">Proposed log-odds loss under Exponential noise</div>
+          <div class="math-block">
+            <div class="mrow"><span class="mk">Logit score:</span><span class="mv">ϕ̄<sub>j</sub> = ϕ<sub>j</sub><sup>priv</sup> − ϕ<sub>j</sub><sup>pub</sup></span><span class="mc">&nbsp;&nbsp;(DClip diff)</span></div>
+            <div class="mrow"><span class="mk">Noisy score:</span><span class="mv">s<sub>j</sub> = ϕ̄<sub>j</sub> + Z<sub>j</sub></span><span class="mc">&nbsp;&nbsp;Z<sub>j</sub> ~ Exp(λ)</span></div>
+            <div class="mrow"><span class="mk">Selection prob:</span><span class="mv">P(y=j) = P(s<sub>j</sub> > s<sub>k</sub> ∀k≠j)</span></div>
+            <div class="mrow" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px;"><span class="mk">Log-odds target:</span><span class="mn">ℒ = −∑<sub>j∈y*</sub> log P(y=j | ϕ̄, λ)</span></div>
+            <div class="mrow"><span class="mk">Closed form:</span><span class="mn">ℒ ≈ −ϕ̄<sub>y*</sub>/λ + log∑<sub>j</sub>exp(ϕ̄<sub>j</sub>/λ)</span><span class="mc">&nbsp;&nbsp;(softplus approx)</span></div>
+            <div class="mrow"><span class="mk">Scale:</span><span class="ms-c">𝒪(|V|) per step</span><span class="mc">&nbsp;&nbsp;numerically stable via log-sum-exp trick</span></div>
+          </div>
+          <p style="font-family:var(--fm);font-size:10.5px;color:var(--muted);margin-top:8px;">The key insight: under Exp noise with scale λ, the log-probability of selecting token j approximates a temperature-scaled cross-entropy with τ = λ. This allows standard autodiff training.</p>
         </div>
+      </div>
+
+    </div>
+
+    <!-- References only (team moved to hero) -->
+    <div style="border-top:1px solid var(--border);padding-top:28px;" class="reveal">
+      <div class="eyebrow">Key references</div>
+      <div class="refs">
+        <div class="ref-item"><div class="num">1.</div><div>Vinod, Pillutla &amp; Thakurta. <em>InvisibleInk: High-Utility and Low-Cost Differentially Private Decoding</em>. arXiv:2507.02974, 2025.</div></div>
+        <div class="ref-item"><div class="num">2.</div><div>McKenna &amp; Sheldon. <em>Permute-and-Flip: A New Mechanism for Differentially Private Selection</em>. NeurIPS 2020.</div></div>
+        <div class="ref-item"><div class="num">3.</div><div>Ding et al. <em>Permute-and-Flip ≡ Report-Noisy-Max with Exponential noise</em>. arXiv:2105.07260, 2021.</div></div>
+        <div class="ref-item"><div class="num">4.</div><div>Zhao, Li &amp; Wang. <em>Optimal stable decoder under privacy constraints</em>. ICLR 2025.</div></div>
       </div>
     </div>
   </div>
@@ -991,22 +990,23 @@ body::after{
 
 </main>
 
-<!-- BOTTOM NAV -->
+<!-- BOTTOM NAV — icon buttons -->
 <nav class="nav-bar">
   <div class="nav-inner">
-    <button class="nav-btn home" id="btn-home" onclick="goTo(0)" title="Home">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10L10 3l7 7"/><path d="M7 19v-6h6v6"/></svg>
-    </button>
     <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 16l-5-6 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Prev
     </button>
-    <div class="nav-section">
-      <span class="ns-num" id="ns-num">§ 00</span>
-      <span class="ns-name" id="ns-name">Front matter</span>
-      <span class="ns-counter"><b id="ns-cur">01</b> / <span id="ns-tot">08</span></span>
+
+    <div class="icon-nav" id="icon-nav">
+      <!-- filled by JS -->
     </div>
-    <div class="nav-progress-mini" id="nav-pips"></div>
+
+    <div class="nav-section">
+      <span class="ns-name" id="ns-name">Front matter</span>
+      <span class="ns-counter">Slide <b id="ns-cur">01</b> / <span id="ns-tot">08</span></span>
+    </div>
+
     <button class="nav-btn" id="btn-next" onclick="navigate(1)">
       Next
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4l5 6-5 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1016,21 +1016,39 @@ body::after{
 
 <script>
 'use strict';
-const SECTIONS=[{num:'§ 00',name:'Front matter'},{num:'§ 01',name:'The problem'},{num:'§ 02',name:'Our solution'},{num:'§ 03',name:'The intuition'},{num:'§ 04',name:'Mathematics'},{num:'§ 05',name:'Simulation'},{num:'§ 06',name:'Results'},{num:'§ 07',name:'Road ahead'}];
+
+/* ── SECTION METADATA with icons ── */
+const SECTIONS=[
+  {name:'Home',      icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10L10 3l7 7"/><path d="M7 19v-6h6v6"/></svg>'},
+  {name:'Problem',   icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01" stroke-linecap="round"/></svg>'},
+  {name:'Solution',  icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 10l4 4 6-7" stroke-linecap="round" stroke-linejoin="round"/></svg>'},
+  {name:'Intuition', icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="8" r="4"/><path d="M8 12v1a2 2 0 004 0v-1M10 4V2" stroke-linecap="round"/></svg>'},
+  {name:'Math',      icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h12M4 10h8M4 14h10" stroke-linecap="round"/></svg>'},
+  {name:'Sim',       icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="3" height="6" rx="1"/><rect x="8.5" y="7" width="3" height="10" rx="1"/><rect x="14" y="3" width="3" height="14" rx="1"/></svg>'},
+  {name:'Results',   icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 14l5-5 4 3 5-7" stroke-linecap="round" stroke-linejoin="round"/></svg>'},
+  {name:'Roadmap',   icon:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 16l4-8 4 4 4-8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="16" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="16" cy="4" r="1.5" fill="currentColor"/></svg>'},
+];
 const TOTAL=SECTIONS.length;
 let cur=0,busy=false,simBuilt=false;
 
-const pipsEl=document.getElementById('nav-pips');
-SECTIONS.forEach((s,i)=>{const p=document.createElement('div');p.className='nav-pip'+(i===0?' active':'');p.title=s.name;p.onclick=()=>goTo(i);pipsEl.appendChild(p);});
+/* Build icon nav */
+const iconNav=document.getElementById('icon-nav');
+SECTIONS.forEach((s,i)=>{
+  const b=document.createElement('button');
+  b.className='inav-btn'+(i===0?' active':'');
+  b.title=s.name;
+  b.innerHTML=s.icon+'<span class="inav-label">'+s.name+'</span>';
+  b.onclick=()=>goTo(i);
+  iconNav.appendChild(b);
+});
 
 function updateChrome(){
-  document.getElementById('ns-num').textContent=SECTIONS[cur].num;
   document.getElementById('ns-name').textContent=SECTIONS[cur].name;
   document.getElementById('ns-cur').textContent=String(cur+1).padStart(2,'0');
   document.getElementById('ns-tot').textContent=String(TOTAL).padStart(2,'0');
   document.getElementById('btn-prev').disabled=cur===0;
   document.getElementById('btn-next').disabled=cur===TOTAL-1;
-  document.querySelectorAll('.nav-pip').forEach((el,i)=>el.classList.toggle('active',i===cur));
+  document.querySelectorAll('.inav-btn').forEach((el,i)=>el.classList.toggle('active',i===cur));
   document.getElementById('topbar').style.setProperty('--prog',((cur+1)/TOTAL*100)+'%');
 }
 
@@ -1059,15 +1077,27 @@ document.addEventListener('keydown',e=>{
 });
 updateChrome();
 
+/* ── EXPAND CARDS ── */
+function toggleFC(id){
+  const el=document.getElementById(id);
+  el.classList.toggle('fc-expanded');
+}
+
 /* ── COIN-FLIP LAB ── */
 const SCORES=[4.0,3.5,2.8,2.2,1.9];
 const Q_STAR=Math.max(...SCORES);
+// Softmax probs
 const P_SOFT=(()=>{const e=SCORES.map(q=>Math.exp(q));const Z=e.reduce((a,b)=>a+b,0);return e.map(v=>v/Z);})();
-const COIN_PROB=SCORES.map(q=>Math.exp(-(Q_STAR-q)));
+// PF coin probs — p_i = exp(-(q*-q_i)/lambda), lambda calibrated so last token always has some prob
+// For display: use ε=1, Δ=1 → lambda=2
+const LAMBDA=2;
+const COIN_PROB=SCORES.map(q=>Math.exp(-(Q_STAR-q)/LAMBDA));
+// Last token always gets probability 1 (guaranteed selection if all others eliminated)
 const TOK_NAMES=['T₁','T₂','T₃','T₄','T₅'];
 const stats={sm:{trials:0,head:0,tail:0,sum:0},rnm:{trials:0,head:0,tail:0,sum:0}};
 let simBusy=false;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
 function sampleCategorical(probs){const r=Math.random();let acc=0;for(let i=0;i<probs.length;i++){acc+=probs[i];if(r<acc)return i;}return probs.length-1;}
 function shuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function setCoin(id,state){const c=document.getElementById(id);c.classList.remove('heads','tails','flipping');if(state===null)return;c.classList.add('flipping');setTimeout(()=>{c.classList.remove('flipping');c.classList.add(state);},250);}
@@ -1088,32 +1118,40 @@ function updateStatsUI(){
   if(sm.trials>0){const a=(sm.sum/sm.trials).toFixed(2);document.getElementById('sm-quality').textContent=a;document.getElementById('agg-sm-q').textContent=a;}
   if(rn.trials>0){const a=(rn.sum/rn.trials).toFixed(2);document.getElementById('rnm-quality').textContent=a;document.getElementById('agg-rnm-q').textContent=a;}
 }
+
 async function simSoftmax(){
   clearPool('sm');setStep('sm','Drawing one token from p ∝ exp(ε·q/2Δ) <em>with replacement</em>…');setResult('sm','');setCoin('coin-sm',null);await sleep(280);
-  const visits=3+Math.floor(Math.random()*2);
-  for(let v=0;v<visits;v++){const idx=Math.floor(Math.random()*5);highlightToken('sm',idx,'testing');document.getElementById('coin-sm').classList.add('flipping');await sleep(200);document.getElementById('coin-sm').classList.remove('flipping');unhighlightToken('sm',idx,'testing');}
   const winner=sampleCategorical(P_SOFT);
+  highlightToken('sm',winner,'testing');
+  document.getElementById('coin-sm').classList.add('flipping');await sleep(400);document.getElementById('coin-sm').classList.remove('flipping');
+  unhighlightToken('sm',winner,'testing');
   highlightToken('sm',winner,'winner');setCoin('coin-sm','heads');
-  setResult('sm','→ <span style="color:var(--green);font-weight:600;">'+TOK_NAMES[winner]+'</span>');
-  setStep('sm','Selected <em>'+TOK_NAMES[winner]+'</em> with score q = '+SCORES[winner].toFixed(1)+'.');
+  setResult('sm','→ <span style="color:var(--cyan);font-weight:600;">'+TOK_NAMES[winner]+'</span>');
+  setStep('sm','Selected <em>'+TOK_NAMES[winner]+'</em> with score q = '+SCORES[winner].toFixed(1)+'. Pool unchanged — same tokens eligible next trial.');
   stats.sm.trials++;stats.sm.sum+=SCORES[winner];if(winner<2)stats.sm.head++;else stats.sm.tail++;updateStatsUI();
 }
+
 async function simPF(){
   clearPool('rnm');setStep('rnm','Permuting uniformly…');setResult('rnm','');setCoin('coin-rnm',null);await sleep(420);
   const order=shuffle([0,1,2,3,4]);
   setStep('rnm','Walking order <b>'+order.map(i=>TOK_NAMES[i]).join(' → ')+'</b>');await sleep(520);
   for(let step=0;step<order.length;step++){
-    const idx=order[step];const p=COIN_PROB[idx];
-    highlightToken('rnm',idx,'testing');setStep('rnm','Testing <b>'+TOK_NAMES[idx]+'</b> · coin probability <em>'+p.toFixed(3)+'</em>');
+    const idx=order[step];
+    // Last token always picked (p=1 guarantee)
+    const isLast=(step===order.length-1);
+    const p=isLast?1.0:COIN_PROB[idx];
+    highlightToken('rnm',idx,'testing');
+    setStep('rnm','Testing <b>'+TOK_NAMES[idx]+'</b> · coin p = <em>'+(isLast?'1.0 (last — guaranteed)':p.toFixed(3))+'</em>');
     document.getElementById('coin-rnm').classList.add('flipping');await sleep(360);document.getElementById('coin-rnm').classList.remove('flipping');unhighlightToken('rnm',idx,'testing');
-    if(Math.random()<p){
+    if(isLast||Math.random()<p){
       highlightToken('rnm',idx,'winner');setCoin('coin-rnm','heads');
-      setResult('rnm','→ <span style="color:var(--green);font-weight:600;">'+TOK_NAMES[idx]+'</span>');
-      setStep('rnm','<b>Heads.</b> Returning <em>'+TOK_NAMES[idx]+'</em> with q = '+SCORES[idx].toFixed(1)+'.');
+      setResult('rnm','→ <span style="color:var(--cyan);font-weight:600;">'+TOK_NAMES[idx]+'</span>');
+      setStep('rnm','<b>Heads'+(isLast?' (forced)':'')+'.</b> Returning <em>'+TOK_NAMES[idx]+'</em> · q = '+SCORES[idx].toFixed(1)+'. Rejected tokens permanently eliminated.');
       stats.rnm.trials++;stats.rnm.sum+=SCORES[idx];if(idx<2)stats.rnm.head++;else stats.rnm.tail++;updateStatsUI();return;
     } else {highlightToken('rnm',idx,'eliminated');setCoin('coin-rnm','tails');await sleep(420);}
   }
 }
+
 async function simRun(){
   if(simBusy)return;simBusy=true;
   const btn=document.getElementById('sim-btn');btn.disabled=true;
@@ -1128,7 +1166,7 @@ function simReset(){
   clearPool('sm');clearPool('rnm');setCoin('coin-sm',null);setCoin('coin-rnm',null);
   setResult('sm','');setResult('rnm','');
   setStep('sm','Sample categorically from p ∝ exp(ε · q / 2Δ). One draw, with replacement — every token is eligible <em>every time</em>.');
-  setStep('rnm','Permute uniformly. Walk the order; flip a biased coin per token. <em>Heads → return.</em> <em>Tails → eliminate.</em>');
+  setStep('rnm','Permute uniformly. Walk the order; flip a biased coin per token. <em>Heads → return.</em> <em>Tails → eliminate permanently.</em>');
   document.getElementById('sm-quality').textContent='—';document.getElementById('rnm-quality').textContent='—';
   document.getElementById('agg-sm-q').textContent='—';document.getElementById('agg-rnm-q').textContent='—';
   updateStatsUI();
@@ -1136,18 +1174,22 @@ function simReset(){
 }
 
 /* ── CHARTS ── */
-Chart.defaults.color='#64748b';Chart.defaults.borderColor='rgba(30,30,46,1)';
+Chart.defaults.color='#5a6478';Chart.defaults.borderColor='rgba(28,28,46,1)';
 Chart.defaults.font.family="'Space Mono', monospace";
 const CI={};
-const COLORS={sm:{bg:'rgba(248,113,113,.22)',border:'#f87171'},rnm:{bg:'rgba(110,231,183,.18)',border:'#6ee7b7'}};
+const COLORS={
+  sm:{bg:'rgba(248,113,113,.22)',border:'#f87171'},
+  rnm:{bg:'rgba(56,217,200,.18)',border:'#38d9c8'}
+};
 const baseOpts=(small=false)=>({
   responsive:true,maintainAspectRatio:false,
-  plugins:{legend:{labels:{font:{family:"'Space Mono'",size:small?9:10},color:'#64748b',boxWidth:10,padding:10}}},
+  plugins:{legend:{labels:{font:{family:"'Space Mono'",size:small?9:10},color:'#5a6478',boxWidth:10,padding:10}}},
   scales:{
-    x:{ticks:{font:{family:"'Space Mono'",size:small?8.5:9}},grid:{color:'rgba(30,30,46,.7)'}},
-    y:{ticks:{font:{family:"'Space Mono'",size:small?8.5:9}},grid:{color:'rgba(30,30,46,.7)'}}
+    x:{ticks:{font:{family:"'Space Mono'",size:small?8.5:9}},grid:{color:'rgba(28,28,46,.8)'}},
+    y:{ticks:{font:{family:"'Space Mono'",size:small?8.5:9}},grid:{color:'rgba(28,28,46,.8)'}}
   }
 });
+
 function mkBar(id,labels,smV,rnmV){
   const ctx=document.getElementById(id);if(!ctx)return;
   if(CI[id]){CI[id].destroy();delete CI[id];}
