@@ -375,43 +375,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
     </div>
   </div>
 </div>
-<div class="pop" id="pop-code" onclick="if(event.target.id==='pop-code') closeCodePop()">
-  <div class="pop-box">
-    <div class="pop-head">
-      <h3>Mechanism Swap — <em>Code Changes</em></h3>
-      <button class="pop-close" onclick="closeCodePop()">✕</button>
-    </div>
-
-    <div class="pop-body">
-      <div class="pop-section">
-        <h4>Softmax (Original)</h4>
-        <div class="txt-block">
-<pre>
-probs = spl.softmax(avg_clip_logits / temperature)
-nxt_token = np.random.choice(np.arange(vocab_size), p=probs)
-</pre>
-        </div>
-      </div>
-
-      <div class="pop-section">
-        <h4>PF (Ours)</h4>
-        <div class="txt-block">
-<pre>
-q = torch.tensor(avg_clip_logits / temperature, device=device)
-q_star = torch.max(q)
-p = torch.exp(q - q_star)
-
-R = torch.rand(vocab_size, device=device)
-U = torch.rand(vocab_size, device=device)
-
-valid = U <= p
-nxt_token = torch.argmin(torch.where(valid, R, torch.inf)).item()
-</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+  
 <div class="pop" id="pop" onclick="popClose(event)">
   <div class="pop-box">
     <div class="pop-head">
@@ -458,8 +422,9 @@ nxt_token = torch.argmin(torch.where(valid, R, torch.inf)).item()
     <div class="hero">
       <div class="reveal" style="display:flex;flex-direction:column;gap:20px;">
         <div class="hero-folio"><span>DA5001 · IIT Madras</span><span class="ff-rule"></span><b>2026</b></div>
-        <h1 class="hero-h1" style="white-space:nowrap;">
-          Differentially Private LLM Decoding
+        <h1 class="hero-h1">
+          <span class="h-project">Differentially Private LLM decoding</span>
+          <span class="h-sub">Evaluating RNM with exponential Noise</span>
         </h1>
         <p class="hero-lede">Softmax distributes probability which under high privacy assigns considerable mass to lower scoring tokens which leads to gradual degradation in coherence. Under differential privacy, this degrades badly. We replace the final sampling step with <em>Report-Noisy-Max using Exponential noise</em>, and prove — and empirically verify — if is <strong> better</strong>.</p>
         <div class="hero-chips">
@@ -484,7 +449,9 @@ nxt_token = torch.argmin(torch.where(valid, R, torch.inf)).item()
       <div class="reveal">
         <div class="codex">
           <div class="codex-bar">
-            <canvas id="distChart"></canvas>
+            <span class="cdot r"></span><span class="cdot y"></span><span class="cdot g"></span>
+            <span class="filename"><b>mechanism_swap</b>.py</span>
+            <span class="lang">Python · DP</span>
           </div>
           <div class="codex-body">
 <span class="cm"># Standard DP decoding (InvisibleInk baseline)</span>
@@ -502,9 +469,6 @@ nxt_token = torch.argmin(torch.where(valid, R, torch.inf)).item()
 <span class="cm"># Top-1 selection: RNM wins 9/9 configs.</span>
           </div>
         </div>
-        <button class="samples-btn" onclick="openCodePop()">
-          View Code Changes
-        </button>
       </div>
     </div>
     <div class="stats reveal">
@@ -982,4 +946,477 @@ async function simSoftmax(){
   const winner=sampleCategorical(P_SOFT);
   highlightToken('sm',winner,'testing');
   document.getElementById('coin-sm').classList.add('flipping');await sleep(400);document.getElementById('coin-sm').classList.remove('flipping');
-  unhighl
+  unhighlightToken('sm',winner,'testing');highlightToken('sm',winner,'winner');setCoin('coin-sm','heads');
+  setResult('sm','→ <span style="color:var(--cyan);font-weight:600;">'+TOK_NAMES[winner]+'</span>');
+  setStep('sm','Selected <em>'+TOK_NAMES[winner]+'</em> · q = '+SCORES[winner].toFixed(1)+'. Pool unchanged — same tokens eligible next trial.');
+  simStats.sm.trials++;simStats.sm.sum+=SCORES[winner];if(winner<2)simStats.sm.head++;else simStats.sm.tail++;updateStatsUI();
+}
+async function simPF(){
+  clearPool('rnm');setStep('rnm','Permuting uniformly…');setResult('rnm','');setCoin('coin-rnm',null);await sleep(420);
+  const order=shuffle([0,1,2,3,4]);
+  setStep('rnm','Walking order <b>'+order.map(i=>TOK_NAMES[i]).join(' → ')+'</b>');await sleep(520);
+  for(let step=0;step<order.length;step++){
+    const idx=order[step];const isLast=(step===order.length-1);const p=isLast?1.0:COIN_PROB[idx];
+    highlightToken('rnm',idx,'testing');
+    setStep('rnm','Testing <b>'+TOK_NAMES[idx]+'</b> · p = <em>'+(isLast?'1.0 (last)':p.toFixed(3))+'</em>');
+    document.getElementById('coin-rnm').classList.add('flipping');await sleep(360);document.getElementById('coin-rnm').classList.remove('flipping');unhighlightToken('rnm',idx,'testing');
+    if(isLast||Math.random()<p){
+      highlightToken('rnm',idx,'winner');setCoin('coin-rnm','heads');
+      setResult('rnm','→ <span style="color:var(--cyan);font-weight:600;">'+TOK_NAMES[idx]+'</span>');
+      setStep('rnm','<b>Heads.</b> Returning <em>'+TOK_NAMES[idx]+'</em> · q = '+SCORES[idx].toFixed(1)+'. Rejected tokens permanently eliminated.');
+      simStats.rnm.trials++;simStats.rnm.sum+=SCORES[idx];if(idx<2)simStats.rnm.head++;else simStats.rnm.tail++;updateStatsUI();return;
+    } else {highlightToken('rnm',idx,'eliminated');setCoin('coin-rnm','tails');await sleep(420);}
+  }
+}
+async function simRun(){
+  if(simBusy)return;simBusy=true;
+  const btn=document.getElementById('sim-btn');btn.disabled=true;
+  btn.innerHTML='<svg viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="3" opacity=".5"/></svg> Running…';
+  await Promise.all([simSoftmax(),simPF()]);
+  await sleep(650);btn.disabled=false;
+  btn.innerHTML='<svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5v9l8-4.5z"/></svg> Run again';simBusy=false;
+}
+function simReset(){
+  if(simBusy)return;
+  simStats.sm={trials:0,head:0,tail:0,sum:0};simStats.rnm={trials:0,head:0,tail:0,sum:0};
+  clearPool('sm');clearPool('rnm');setCoin('coin-sm',null);setCoin('coin-rnm',null);
+  setResult('sm','');setResult('rnm','');
+  setStep('sm','Sample categorically from p ∝ exp(ε · q / 2Δ). One draw, with replacement — every token eligible every time.');
+  setStep('rnm','Permute uniformly. Walk the order; flip a biased coin per token. <em>Heads → return.</em> <em>Tails → eliminate permanently.</em>');
+  document.getElementById('sm-quality').textContent='—';document.getElementById('rnm-quality').textContent='—';
+  document.getElementById('agg-sm-q').textContent='—';document.getElementById('agg-rnm-q').textContent='—';
+  updateStatsUI();
+  document.getElementById('sim-btn').innerHTML='<svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5v9l8-4.5z"/></svg> Run trial';
+}
+
+/* ── SIM CHARTS ── */
+Chart.defaults.color='#5a6478';
+Chart.defaults.borderColor='rgba(28,28,46,1)';
+Chart.defaults.font.family="'Space Mono', monospace";
+const CI={};
+const C_SM={bg:'rgba(248,113,113,.18)',border:'#f87171'};
+const C_RNM={bg:'rgba(56,217,200,.18)',border:'#38d9c8'};
+
+function buildSimCharts(){
+  const mkL=(id,labels,smD,rnD,type='bar')=>{
+    const ctx=document.getElementById(id);if(!ctx)return;
+    if(CI[id])CI[id].destroy();
+    CI[id]=new Chart(ctx,{type,data:{labels,datasets:[
+      {label:'Softmax',data:smD,backgroundColor:C_SM.bg,borderColor:C_SM.border,borderWidth:1.5,
+       borderRadius:type==='bar'?4:0,tension:.35,pointRadius:type==='line'?3:0,fill:type==='line'},
+      {label:'RNM-Exp',data:rnD,backgroundColor:C_RNM.bg,borderColor:C_RNM.border,borderWidth:1.5,
+       borderRadius:type==='bar'?4:0,tension:.35,pointRadius:type==='line'?3:0,fill:type==='line'}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{family:"'Space Mono'",size:9},color:'#9ba3b8',boxWidth:10,padding:8}}},
+      scales:{x:{ticks:{font:{size:9},color:'#5a6478'},grid:{color:'rgba(28,28,46,.8)'}},
+               y:{ticks:{font:{size:9},color:'#5a6478'},grid:{color:'rgba(28,28,46,.8)'}}}
+    }});
+  };
+  const ranks=Array.from({length:12},(_,i)=>'T'+(i+1));
+  mkL('chart-prob',ranks,[0.41,0.22,0.12,0.08,0.06,0.04,0.02,0.015,0.01,0.008,0.005,0.003],[0.63,0.21,0.08,0.04,0.02,0.01,0.005,0.003,0.001,0.001,0.0005,0.0002],'bar');
+  const pV=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9];
+  mkL('chart-error',pV.map(p=>p.toFixed(1)),pV.map(p=>(4*p)/(1+4*p)),pV.map(p=>1-(1-(1-p)**5)/(5*p)),'line');
+  const ns=[2,5,10,20,50,100,500,1000,5000,10000];
+  mkL('chart-scale',ns.map(String),ns.map(n=>2*Math.log(n)),ns.map(n=>{let s=0;for(let i=1;i<=n;i++)s+=1/i;return 2*s;}),'line');
+}
+
+/* ── RESULTS DATA — indexed by [eps_idx] for each dataset ── */
+/* eps_idx: 0=ε1, 1=ε5, 2=ε10                               */
+const EPS_LABELS=['ε=1','ε=5','ε=10'];
+
+/* RD[ds].metric = [sm_eps1, sm_eps5, sm_eps10], [rnm_eps1, rnm_eps5, rnm_eps10] */
+const RD={
+  tab:{
+    ppl:  {sm:[24.95,27.00,26.72], rnm:[23.17,22.72,22.70], lowerBetter:true},
+    mauve:{sm:[0.994,0.978,0.988], rnm:[0.975,0.984,0.999], lowerBetter:false},
+    bert: {sm:[0.769,0.769,0.767], rnm:[0.772,0.768,0.768], lowerBetter:false},
+    top1: {sm:[57.2,56.8,56.7],    rnm:[60.1,62.4,59.7],    lowerBetter:false},
+    rep:  {sm:[0.035,0.026,0.028], rnm:[0.033,0.043,0.044], lowerBetter:true},
+    rank: {sm:[52.89,52.40,48.51], rnm:[44.76,44.50,52.96], lowerBetter:true},
+  },
+  yelp:{
+    ppl:  {sm:[27.87,27.60,26.56], rnm:[25.28,24.75,23.87], lowerBetter:true},
+    mauve:{sm:[0.692,0.787,0.619], rnm:[0.765,0.573,0.660], lowerBetter:false},
+    bert: {sm:[0.794,0.789,0.791], rnm:[0.791,0.790,0.790], lowerBetter:false},
+    top1: {sm:[54.9,56.7,55.1],    rnm:[59.7,59.5,58.6],    lowerBetter:false},
+    rep:  {sm:[0.017,0.033,0.032], rnm:[0.030,0.030,0.038], lowerBetter:true},
+    rank: {sm:[49.37,47.45,47.68], rnm:[55.43,43.08,43.91], lowerBetter:true},
+  },
+  pubmed:{
+    ppl:  {sm:[32.64,28.71,24.47], rnm:[21.49,23.67,25.21], lowerBetter:true},
+    mauve:{sm:[0.719,0.479,0.755], rnm:[0.977,0.853,0.809], lowerBetter:false},
+    bert: {sm:[0.771,0.767,0.767], rnm:[0.770,0.768,0.768], lowerBetter:false},
+    top1: {sm:[56.9,57.9,58.4],    rnm:[62.1,61.3,61.4],    lowerBetter:false},
+    rep:  {sm:[0.031,0.029,0.029], rnm:[0.034,0.037,0.036], lowerBetter:true},
+    rank: {sm:[54.08,48.13,44.57], rnm:[51.06,46.83,46.37], lowerBetter:true},
+  }
+};
+
+const METRIC_KEYS=['ppl','mauve','bert','top1','rep','rank'];
+
+/* Determine winner per metric across all eps: 'rnm', 'sm', or 'tie' */
+function winnerAcross(smArr, rnmArr, lowerBetter){
+  let rnmW=0, smW=0;
+  for(let i=0;i<3;i++){
+    const rnmBetter = lowerBetter ? rnmArr[i]<smArr[i] : rnmArr[i]>smArr[i];
+    const smBetter  = lowerBetter ? smArr[i]<rnmArr[i] : smArr[i]>rnmArr[i];
+    if(rnmBetter) rnmW++; else if(smBetter) smW++;
+  }
+  if(rnmW>smW) return 'rnm';
+  if(smW>rnmW) return 'sm';
+  return 'tie';
+}
+
+const METRIC_LABELS={ppl:'PPL',mauve:'MAUVE',bert:'BERT F1',top1:'Top-1%',rep:'Rep-3',rank:'Rank'};
+
+function buildWinStrip(ds){
+  const strip=document.getElementById('ws-'+ds);
+  if(!strip)return;
+  strip.innerHTML=METRIC_KEYS.map(k=>{
+    const d=RD[ds][k];
+    const w=winnerAcross(d.sm,d.rnm,d.lowerBetter);
+    const badge=w==='rnm'?'RNM wins':w==='sm'?'SM wins':'Tie';
+    const cls=w==='rnm'?'rnm':w==='sm'?'sm':'tie';
+    return `<div class="win-cell"><div class="wc-metric">${METRIC_LABELS[k]}</div><div class="wc-badge ${cls}">${badge}</div></div>`;
+  }).join('');
+}
+
+function lineChartOpts(lowerBetter){
+  return {
+    responsive:true,
+    maintainAspectRatio:false,
+    animation:{duration:600,easing:'easeInOutQuart'},
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'rgba(8,8,14,.95)',
+        titleFont:{family:"'Exo 2'",size:11,weight:'700'},
+        bodyFont:{family:"'Space Mono'",size:10},
+        padding:10,
+        borderColor:'rgba(28,28,46,1)',
+        borderWidth:1,
+        callbacks:{
+          title:items=>items[0].label,
+          label:item=>`${item.dataset.label}: ${item.parsed.y}`
+        }
+      }
+    },
+    scales:{
+      x:{
+        ticks:{font:{family:"'Space Mono'",size:9},color:'#ffffff',padding:4},
+        grid:{color:'rgba(28,28,46,.7)'},
+        border:{color:'rgba(28,28,46,.7)'}
+      },
+      y:{
+        ticks:{font:{family:"'Space Mono'",size:9},color:'#ffffff',padding:4,maxTicksLimit:5},
+        grid:{color:'rgba(28,28,46,.7)'},
+        border:{color:'rgba(28,28,46,.7)'}
+      }
+    }
+  };
+}
+
+function buildLineChart(canvasId, smVals, rnmVals, lowerBetter){
+  const ctx=document.getElementById(canvasId);
+  if(!ctx)return;
+  if(CI[canvasId]){CI[canvasId].destroy();delete CI[canvasId];}
+
+  CI[canvasId]=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:EPS_LABELS,
+      datasets:[
+        {
+          label:'Softmax',
+          data:smVals,
+          borderColor:'#f87171',
+          backgroundColor:'rgba(248,113,113,.12)',
+          borderWidth:2,
+          pointBackgroundColor:'#f87171',
+          pointBorderColor:'#08080e',
+          pointBorderWidth:2,
+          pointRadius:5,
+          pointHoverRadius:7,
+          tension:0.3,
+          fill:false
+        },
+        {
+          label:'RNM-Exp',
+          data:rnmVals,
+          borderColor:'#38d9c8',
+          backgroundColor:'rgba(56,217,200,.1)',
+          borderWidth:2.5,
+          pointBackgroundColor:'#38d9c8',
+          pointBorderColor:'#08080e',
+          pointBorderWidth:2,
+          pointRadius:5,
+          pointHoverRadius:7,
+          tension:0.3,
+          fill:false
+        }
+      ]
+    },
+    options:lineChartOpts(lowerBetter)
+  });
+}
+
+function buildDatasetCharts(ds){
+  buildWinStrip(ds);
+  METRIC_KEYS.forEach(k=>{
+    const d=RD[ds][k];
+    buildLineChart('lc-'+ds+'-'+k, d.sm, d.rnm, d.lowerBetter);
+  });
+}
+
+let activeDS='tab';
+
+function buildAllResults(){
+  ['tab','yelp','pubmed'].forEach(ds=>buildDatasetCharts(ds));
+}
+
+function switchDS(ds,btn){
+  document.querySelectorAll('.dpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('dp-'+ds).classList.add('active');
+  btn.classList.add('active');
+  activeDS=ds;
+}
+
+/* ── POPUP ── */
+const SD={
+  tab:[
+    {eps:'ε=1 · strong privacy · high noise',
+     ref:'TAB (text-anonymization-benchmark) — ECHR court cases. Real distribution.',
+     pub:'mattmdjaga/text-anonymization-benchmark-train · train split',
+     sm:'Softmax PPL=24.95, MAUVE=0.994, Top-1%=57.2%, Mean rank=52.9.\nBoth methods produce high-quality structured legal text at ε=1 on TAB. Softmax MAUVE is slightly higher (0.994 vs 0.975) here.',
+     rnm:'RNM-Exp PPL=23.17 (−7%), MAUVE=0.975, Top-1%=60.1%, Mean rank=44.8.\nRNM selects top-1 tokens 2.9pp more often.',
+     note:'TAB ε=1: RNM wins PPL and Top-1%, MAUVE near-parity. Structured legal domain well-captured by Top-k+ filter.'},
+    {eps:'ε=5 · medium privacy',
+     ref:'TAB corpus — anonymised ECHR legal proceedings.',
+     pub:'mattmdjaga/text-anonymization-benchmark-train',
+     sm:'Softmax PPL=27.00, MAUVE=0.978, Top-1%=56.8%, Rep-3=0.026.',
+     rnm:'RNM-Exp PPL=22.72 (−16%), MAUVE=0.984, Top-1%=62.4%.\nRNM wins all metrics at ε=5. Largest Top-1% gap (5.6pp).',
+     note:'TAB ε=5: Cleanest result — medium privacy, RNM wins all 5 metrics.'},
+    {eps:'ε=10 · weak privacy · low noise',
+     ref:'TAB corpus — anonymised ECHR legal proceedings.',
+     pub:'mattmdjaga/text-anonymization-benchmark-train',
+     sm:'Softmax PPL=26.72, MAUVE=0.988, Top-1%=56.7%, Mean rank=48.5.',
+     rnm:'RNM-Exp PPL=22.70, MAUVE=0.999, Top-1%=59.7%.\nMean rank reverses at ε=10 but Top-1% advantage persists (3pp).',
+     note:'TAB ε=10: One of two configs where mean rank reverses. Top-1% still RNM-dominant.'},
+  ],
+  yelp:[
+    {eps:'ε=1 · strong privacy · high noise',
+     ref:'Yelp polarity dataset — binary sentiment reviews.',
+     pub:'yelp_polarity train[:5000]',
+     sm:'Softmax PPL=27.87, MAUVE=0.692, Top-1%=54.9%, Rep-3=0.017.',
+     rnm:'RNM-Exp PPL=25.28, MAUVE=0.765, Top-1%=59.7%.\nAt ε=1, RNM wins PPL (−9.3%) and MAUVE (+10.5%) and Top-1% (+4.8pp).',
+     note:'Yelp ε=1: RNM wins. Softmax low Rep-3 may reflect degenerate short outputs.'},
+    {eps:'ε=5 · medium privacy',
+     ref:'Yelp polarity — binary sentiment reviews.',
+     pub:'yelp_polarity train[:5000]',
+     sm:'Softmax PPL=27.60, MAUVE=0.787 (highest Yelp config), Top-1%=56.7%.',
+     rnm:'RNM-Exp PPL=24.75, MAUVE=0.573, Top-1%=59.5%.\nRNM wins PPL but LOSES MAUVE at ε=5.',
+     note:'Yelp ε=5: Main anomaly. RNM too concentrated → distribution diverges from real Yelp.'},
+    {eps:'ε=10 · weak privacy · low noise',
+     ref:'Yelp polarity — binary sentiment reviews.',
+     pub:'yelp_polarity train[:5000]',
+     sm:'Softmax PPL=26.56, MAUVE=0.619, Top-1%=55.1%.',
+     rnm:'RNM-Exp PPL=23.87, MAUVE=0.660, Top-1%=58.6%.\nAt ε=10 RNM wins PPL (−10.1%) and MAUVE (+6.6%).',
+     note:'Yelp ε=10: RNM recovers all metrics. ε=5 anomaly is an outlier.'},
+  ],
+  pubmed:[
+    {eps:'ε=1 · strong privacy · high noise',
+     ref:'PubMed biomedical abstracts — formal scientific register.',
+     pub:'ccdv/pubmed-summarization train[:5000]["abstract"]',
+     sm:'Softmax PPL=32.64, MAUVE=0.719, Top-1%=56.9%.\nHighest PPL / lowest MAUVE across all configs.',
+     rnm:'RNM-Exp PPL=21.49 (−34%!), MAUVE=0.977 (+36%!), Top-1%=62.1%.\nFlagship result of the study.',
+     note:'PubMed ε=1: Strongest result. PPL −34%, MAUVE +36%. Biomedical text suffers most from Softmax tail corruption.'},
+    {eps:'ε=5 · medium privacy',
+     ref:'PubMed biomedical abstracts.',
+     pub:'ccdv/pubmed-summarization train[:5000]["abstract"]',
+     sm:'Softmax PPL=28.71, MAUVE=0.479 (worst score in study!), Top-1%=57.9%.',
+     rnm:'RNM-Exp PPL=23.67 (−17.6%), MAUVE=0.853 (+78.1%), Top-1%=61.3%.',
+     note:'PubMed ε=5: Softmax MAUVE collapses to 0.479. RNM 78% improvement.'},
+    {eps:'ε=10 · weak privacy · low noise',
+     ref:'PubMed biomedical abstracts.',
+     pub:'ccdv/pubmed-summarization train[:5000]["abstract"]',
+     sm:'Softmax PPL=24.47, MAUVE=0.755, Top-1%=58.4%.',
+     rnm:'RNM-Exp PPL=25.21, MAUVE=0.809, Top-1%=61.4%.\nOnly config where Softmax wins PPL (by 0.74).',
+     note:'PubMed ε=10: Only Softmax PPL win. Mechanisms converge at low noise.'},
+  ]
+};
+let popDS='tab',popEi=0;
+function renderPop(){
+  const d=SD[popDS][popEi];
+  document.getElementById('pop-eps-tag').textContent=d.eps;
+  document.getElementById('p-ref').textContent=d.ref;
+  document.getElementById('p-pub').textContent=d.pub;
+  document.getElementById('p-sm').textContent=d.sm;
+  document.getElementById('p-rnm').textContent=d.rnm;
+  document.getElementById('p-note').textContent=d.note;
+  ['tab','yelp','pubmed'].forEach(ds=>document.getElementById('pn-'+ds).classList.toggle('active',ds===popDS));
+  [0,1,2].forEach(i=>document.getElementById('pe-'+i).classList.toggle('active',i===popEi));
+}
+function popOpen(){popDS=activeDS;popEi=0;renderPop();document.getElementById('pop').classList.add('open');document.body.style.overflow='hidden';}
+function popSetDS(ds){popDS=ds;renderPop();}
+function popSetEps(ei){popEi=ei;renderPop();}
+function popClose(e){if(e.target.id==='pop')popCloseDirect();}
+function popCloseDirect(){document.getElementById('pop').classList.remove('open');document.body.style.overflow='';}
+function openRatioChart(){
+  document.getElementById('pop-ratio').classList.add('open');
+  document.body.style.overflow='hidden';
+  if(!CI['chart-em-pf-ratio'])buildThm3Chart();
+}
+function closeRatioChart(){
+  document.getElementById('pop-ratio').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+async function buildThm3Chart() {
+  try {
+    // 1. Fetch the data dynamically from the JSON file in your repo
+    const response = await fetch('empf_ratio_data.json');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // 2. Parse the JSON directly into our RATIO_DATA variable
+    const RATIO_DATA = await response.json();
+
+    // 3. Process the data for clean rendering (using your original stride logic)
+    const stride = 5;
+    const pSlice = RATIO_DATA.p.filter((_, i) => i % stride === 0 && RATIO_DATA.p[i] < 1);
+    const slice = (arr) => arr.filter((_, i) => i % stride === 0).slice(0, pSlice.length);
+
+    const ns = ['n_2', 'n_3', 'n_5', 'n_10'];
+    const labels = ['n = 2', 'n = 3', 'n = 5', 'n = 10'];
+    const colors = ['#a78bfa', '#f87171', '#38d9c8', '#c084fc'];
+
+    const ctx = document.getElementById('chart-em-pf-ratio');
+    if (!ctx) return;
+    
+    // Safety check for your global CI dictionary
+    if (typeof CI === 'undefined') {
+      window.CI = {}; 
+    }
+    if (CI['chart-em-pf-ratio']) {
+      CI['chart-em-pf-ratio'].destroy();
+    }
+
+    // 4. Render the chart using the dynamically loaded data
+    CI['chart-em-pf-ratio'] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: ns.map((k, i) => ({
+          label: labels[i],
+          data: slice(RATIO_DATA[k]).map((y, j) => ({ x: pSlice[j], y: isNaN(y) ? null : y })),
+          borderColor: colors[i],
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+          spanGaps: false,
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        parsing: false,
+        plugins: {
+          legend: { labels: { font: { family: "'Space Mono'", size: 10 }, color: '#9ba3b8', boxWidth: 24, padding: 12 } }
+        },
+        scales: {
+          x: {
+            type: 'linear', min: 0, max: 1,
+            title: { display: true, text: 'p', color: '#5a6478', font: { family: "'Space Mono'", size: 11 } },
+            ticks: { font: { size: 10 }, color: '#9ba3b8' },
+            grid: { color: 'rgba(28,28,46,.8)' }
+          },
+          y: {
+            min: 1, max: 2,
+            title: { display: true, text: 'Ratio (EM / PF)', color: '#5a6478', font: { family: "'Space Mono'", size: 11 } },
+            ticks: { font: { size: 10 }, color: '#9ba3b8' },
+            grid: { color: 'rgba(28,28,46,.8)' }
+          }
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error loading chart data:", error);
+  }
+}
+/* ── UTILITY COMPARISON CHART (Problem slide) ── */
+/* ── UTILITY COMPARISON CHART (Problem slide) — data from utility_data.json ── */
+const UTILITY_DATA={
+  ranks:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50],
+  softmax:[0.4244,0.15205,0.08655,0.05505,0.03525,0.03175,0.0231,0.0176,0.0164,0.01515,0.0118,0.01085,0.00865,0.00775,0.00785,0.0064,0.00575,0.00525,0.00515,0.0051,0.005,0.00305,0.00405,0.00475,0.00375,0.00255,0.0034,0.0036,0.003,0.00265,0.0021,0.00215,0.0028,0.002,0.00135,0.00135,0.00185,0.0015,0.0017,0.0017,0.0019,0.00095,0.00155,0.00115,0.0018,0.0016,0.00085,0.00115,0.00135,0.00155],
+  rnm:[0.54045,0.13015,0.0686,0.0426,0.02955,0.02085,0.0194,0.01445,0.01115,0.0115,0.0087,0.0083,0.0074,0.0064,0.006,0.0054,0.00505,0.0044,0.00355,0.0036,0.0036,0.00275,0.00315,0.0032,0.00255,0.003,0.00265,0.00225,0.00225,0.00185,0.0016,0.0015,0.00145,0.0013,0.00145,0.00155,0.00145,0.0014,0.00115,0.00155,0.00115,0.0013,0.00115,0.0014,0.0013,0.001,0.00095,0.0007,0.00085,0.00105],
+  smErr:1.463,
+  pfErr:1.148
+};
+
+function buildUtilityChart(){
+  const ctx=document.getElementById('chart-utility-cmp');
+  if(!ctx)return;
+  if(CI['chart-utility-cmp']){CI['chart-utility-cmp'].destroy();}
+  CI['chart-utility-cmp']=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:UTILITY_DATA.ranks,
+      datasets:[
+        {
+          label:'Softmax  (Error: '+UTILITY_DATA.smErr+')',
+          data:UTILITY_DATA.softmax,
+          backgroundColor:'rgba(248,113,113,.55)',
+          borderColor:'#f87171',
+          borderWidth:1,
+          borderRadius:2,
+          barPercentage:0.85,
+        },
+        {
+          label:'RNM-Exp  (Error: '+UTILITY_DATA.pfErr+')',
+          data:UTILITY_DATA.rnm,
+          backgroundColor:'rgba(56,217,200,.55)',
+          borderColor:'#38d9c8',
+          borderWidth:1,
+          borderRadius:2,
+          barPercentage:0.85,
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{
+          position:'top',
+          align:'end',
+          labels:{font:{family:"'Space Mono'",size:10},color:'#9ba3b8',boxWidth:14,padding:16}
+        },
+        tooltip:{
+          backgroundColor:'rgba(8,8,14,.95)',
+          titleFont:{family:"'Exo 2'",size:11,weight:'700'},
+          bodyFont:{family:"'Space Mono'",size:10},
+          padding:10,borderColor:'rgba(28,28,46,1)',borderWidth:1,
+        }
+      },
+      scales:{
+        x:{
+          title:{display:true,text:'Vocabulary Rank',color:'#5a6478',font:{family:"'Space Mono'",size:10}},
+          ticks:{font:{size:9},color:'#9ba3b8',maxTicksLimit:12},
+          grid:{color:'rgba(28,28,46,.6)'},border:{color:'rgba(28,28,46,.8)'}
+        },
+        y:{
+          title:{display:true,text:'Selection Probability',color:'#5a6478',font:{family:"'Space Mono'",size:10}},
+          ticks:{font:{size:9},color:'#9ba3b8'},
+          grid:{color:'rgba(28,28,46,.6)'},border:{color:'rgba(28,28,46,.8)'}
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
