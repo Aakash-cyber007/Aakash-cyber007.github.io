@@ -646,6 +646,14 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
         <button class="dtab" onclick="switchDS('yelp',this)">Yelp</button>
         <button class="dtab" onclick="switchDS('pubmed',this)">PubMed</button>
       </div>
+      <!-- 🔹 RIGHT SIDE (modified) -->
+  <div style="display:flex; align-items:center; gap:14px;">
+
+    <!-- ADD THIS -->
+    <div class="hero-meta-cell" style="min-width:160px;">
+      <div class="l">Samples per config</div>
+      <div class="v">100 texts</div>
+    </div>
       <button class="samples-btn" onclick="popOpen()">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M6 8h8M6 11h6M6 14h4"/></svg>
         View text samples
@@ -1047,12 +1055,12 @@ function lineChartOpts(lowerBetter){
     },
     scales:{
       x:{
-        ticks:{font:{family:"'Space Mono'",size:9},color:'#5a6478',padding:4},
+        ticks:{font:{family:"'Space Mono'",size:9},color:'#ffffff',padding:4},
         grid:{color:'rgba(28,28,46,.7)'},
         border:{color:'rgba(28,28,46,.7)'}
       },
       y:{
-        ticks:{font:{family:"'Space Mono'",size:9},color:'#5a6478',padding:4,maxTicksLimit:5},
+        ticks:{font:{family:"'Space Mono'",size:9},color:'#ffffff',padding:4,maxTicksLimit:5},
         grid:{color:'rgba(28,28,46,.7)'},
         border:{color:'rgba(28,28,46,.7)'}
       }
