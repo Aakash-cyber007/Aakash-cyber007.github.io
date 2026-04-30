@@ -1032,7 +1032,35 @@ function buildSimCharts(){
   });
 
   /* Chart 1: Theorem 1 softmax side */
-  /* Chart 3: Worst-case expected error vs vocabulary size */
+  (function(){
+    const ctx=document.getElementById('chart-proof1');if(!ctx)return;
+    if(CI['chart-proof1'])CI['chart-proof1'].destroy();
+    const labels=PROOF1_DATA.x_ranks.slice(0,50);
+    CI['chart-proof1']=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+      {label:'Gumbel-Max (empirical)',data:PROOF1_DATA.gumbel_counts,
+       backgroundColor:'rgba(248,113,113,.35)',borderColor:'#f87171',borderWidth:1,borderRadius:2,order:2},
+      {label:'Algo-2 with replacement',data:PROOF1_DATA.algo2_with_replacement,
+       backgroundColor:'rgba(245,200,66,.25)',borderColor:'#f5c842',borderWidth:1,borderRadius:2,order:3},
+      {label:'Theoretical Softmax',data:PROOF1_DATA.theoretical_softmax,type:'line',
+       borderColor:'#38d9c8',backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0.3,order:1}
+    ]},options:baseOpts()});
+  })();
+
+  /* Chart 2: Theorem 1 RNM side */
+  (function(){
+    const ctx=document.getElementById('chart-proof2');if(!ctx)return;
+    if(CI['chart-proof2'])CI['chart-proof2'].destroy();
+    const labels=PROOF2_DATA.x_ranks.slice(0,50);
+    CI['chart-proof2']=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+      {label:'RNM-Exponential',data:PROOF2_DATA.rnm_exponential,
+       backgroundColor:'rgba(167,139,250,.35)',borderColor:'#a78bfa',borderWidth:1,borderRadius:2},
+      {label:'PF without replacement',data:PROOF2_DATA.pf_without_replacement,
+       backgroundColor:'rgba(56,217,200,.25)',borderColor:'#38d9c8',borderWidth:1,borderRadius:2}
+    ]},options:baseOpts()});
+  })();
+
+  /* Chart 3: Theorem 3 expected error n=5 */
+/* Chart 3: Worst-case expected error vs vocabulary size */
   (function(){
     const ctx=document.getElementById('chart-error2');if(!ctx)return;
     if(CI['chart-error2'])CI['chart-error2'].destroy();
@@ -1050,35 +1078,6 @@ function buildSimCharts(){
       ]
     },options:baseOpts()});
   })();
-
-  /* Chart 2: Theorem 1 RNM side */
-  (function(){
-    const ctx=document.getElementById('chart-proof2');if(!ctx)return;
-    if(CI['chart-proof2'])CI['chart-proof2'].destroy();
-    const labels=PROOF2_DATA.x_ranks.slice(0,50);
-    CI['chart-proof2']=new Chart(ctx,{type:'bar',data:{labels,datasets:[
-      {label:'RNM-Exponential',data:PROOF2_DATA.rnm_exponential,
-       backgroundColor:'rgba(167,139,250,.35)',borderColor:'#a78bfa',borderWidth:1,borderRadius:2},
-      {label:'PF without replacement',data:PROOF2_DATA.pf_without_replacement,
-       backgroundColor:'rgba(56,217,200,.25)',borderColor:'#38d9c8',borderWidth:1,borderRadius:2}
-    ]},options:baseOpts()});
-  })();
-
-  /* Chart 3: Theorem 3 expected error n=5 */
-  (function(){
-    const ctx=document.getElementById('chart-error2');if(!ctx)return;
-    if(CI['chart-error2'])CI['chart-error2'].destroy();
-    CI['chart-error2']=new Chart(ctx,{type:'line',data:{
-      labels:THEO_P_VALS.map(v=>v.toFixed(2)),
-      datasets:[
-        {label:'EM (n=5)',data:THEO_N5_EM,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.08)',
-         borderWidth:2,pointRadius:0,tension:0.3,fill:true},
-        {label:'PF/RNM-Exp (n=5)',data:THEO_N5_PF,borderColor:'#38d9c8',backgroundColor:'rgba(56,217,200,.08)',
-         borderWidth:2,pointRadius:0,tension:0.3,fill:true}
-      ]
-    },options:baseOpts()});
-  })();
-}
 
 /* ── RESULTS DATA — indexed by [eps_idx] for each dataset ── */
 /* eps_idx: 0=ε1, 1=ε5, 2=ε10                               */
