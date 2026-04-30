@@ -681,7 +681,6 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
         <canvas id="chart-error2" role="img" aria-label="Expected error of EM above PF across all p for n=5"></canvas>
       </div>
     </div>
-    </div>
     <div class="g4 reveal">
       <div class="finding" style="--fl:var(--cyan);--fl-bg:rgba(56,217,200,.1);"><div class="finding-num">i</div><div class="fl">Equivalence verified</div><p>Softmax ≡ Gumbel-Max. RNM-Exp ≡ PF. Both match exactly across 20,000 trials.</p></div>
       <div class="finding" style="--fl:#4ade80;--fl-bg:rgba(74,222,128,.1);"><div class="finding-num">ii</div><div class="fl">Utility gap</div><p>PF/RNM consistently selects higher-scoring tokens. Gap widens as privacy budget tightens.</p></div>
@@ -1078,7 +1077,7 @@ function buildSimCharts(){
       ]
     },options:baseOpts()});
   })();
-
+}
 /* ── RESULTS DATA — indexed by [eps_idx] for each dataset ── */
 /* eps_idx: 0=ε1, 1=ε5, 2=ε10                               */
 const EPS_LABELS=['ε=1','ε=5','ε=10'];
