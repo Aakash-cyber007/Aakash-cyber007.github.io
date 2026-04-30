@@ -231,6 +231,10 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
 .plot-t{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;letter-spacing:-.005em;}
 .plot canvas{display:block!important;max-height:220px!important;}
 .plot-sm canvas{max-height:150px!important;}
+.plot-theorem canvas {
+  height: 320px !important;
+  aspect-ratio: 2 / 1;
+}
 .finding{background:var(--card);padding:16px 18px;border-left:3px solid var(--fl,var(--cyan));position:relative;border-radius:var(--r-md);border:1px solid var(--border);}
 .finding-num{position:absolute;top:10px;right:14px;font-family:var(--fh);font-size:22px;font-weight:800;color:var(--fl-bg,rgba(56,217,200,.1));font-style:italic;}
 .finding .fl{font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--fl,var(--cyan));margin-bottom:6px;}
@@ -675,7 +679,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
       </div>
     </div>
     <div class="reveal" style="margin-bottom:12px;">
-      <div class="plot plot-sm">
+      <div class="plot plot-">
         <div class="plot-h">Theorem 3 · Closed form · n=5</div>
         <div class="plot-t">Expected error vs. p — EM always above PF/RNM-Exp</div>
         <canvas id="chart-error2" role="img" aria-label="Expected error of EM above PF across all p for n=5"></canvas>
