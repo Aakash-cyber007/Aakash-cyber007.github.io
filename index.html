@@ -669,15 +669,15 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;back
         <canvas id="chart-proof1" role="img" aria-label="Theoretical softmax vs empirical Gumbel-Max and Algo-2, confirming equivalence"></canvas>
       </div>
       <div class="plot">
-        <div class="plot-h">Theorem 1 · Proof · RNM side</div>
+        <div class="plot-h">Theorem 2 · Proof · RNM side</div>
         <div class="plot-t">RNM-Exponential vs. Permute-and-Flip (without replacement)</div>
         <canvas id="chart-proof2" role="img" aria-label="RNM-Exponential vs PF, confirming distributional equivalence"></canvas>
       </div>
     </div>
     <div class="reveal" style="margin-bottom:12px;">
-      <div class="plot plot-sm">
-        <div class="plot-h">Theorem 3 · Closed form · n=5</div>
-        <div class="plot-t">Expected error vs. p — EM always above PF/RNM-Exp</div>
+      <div class="plot" style="height:380px;">
+        <div class="plot-h">Theorem 3 ·Bounds </div>
+        <div class="plot-t">Worst case Expected error vs. n</div>
         <canvas id="chart-error2" role="img" aria-label="Expected error of EM above PF across all p for n=5"></canvas>
       </div>
     </div>
@@ -1025,7 +1025,7 @@ function buildSimCharts(){
       legend:{labels:{font:{family:"'Space Mono'",size:9},color:'#9ba3b8',boxWidth:12,padding:8}}
     },
     scales:{
-      x:{ticks:{font:{size:8},color:'#9ba3b8',maxTicksLimit:10},grid:{color:'rgba(28,28,46,.8)'}},
+      x:{type: 'logarithmic',ticks:{font:{size:8},color:'#9ba3b8',maxTicksLimit:10},grid:{color:'rgba(28,28,46,.8)'}},
       y:{ticks:{font:{size:8},color:'#9ba3b8',maxTicksLimit:6},grid:{color:'rgba(28,28,46,.8)'}}
     }
   });
@@ -1066,16 +1066,42 @@ function buildSimCharts(){
     CI['chart-error2']=new Chart(ctx,{type:'line',data:{
       labels:WORST_N_RANGE.map(String),
       datasets:[
-        {label:'Worst-case EM',data:WORST_EM,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.08)',
-         borderWidth:2,pointRadius:0,tension:0,fill:false},
-        {label:'Worst-case PF/RNM-Exp',data:WORST_PF,borderColor:'#38d9c8',backgroundColor:'rgba(56,217,200,.08)',
-         borderWidth:2,pointRadius:0,tension:0,fill:false},
-        {label:'log(n)',data:WORST_LOG_N,borderColor:'#f5c842',backgroundColor:'transparent',
-         borderWidth:1.5,pointRadius:0,tension:0,fill:false,borderDash:[4,3]},
-        {label:'2·log(n)',data:WORST_2LOG_N,borderColor:'#a78bfa',backgroundColor:'transparent',
-         borderWidth:1.5,pointRadius:0,tension:0,fill:false,borderDash:[4,3]}
+        {
+          label:'Worst-case EM',
+          data: WORST_EM.map((y,i)=>({x: WORST_N_RANGE[i], y})),
+          borderColor:'#f87171',
+          backgroundColor:'rgba(248,113,113,.08)',
+          borderWidth:2,pointRadius:0,tension:0,fill:false
+        },
+        {
+          label:'Worst-case PF/RNM-Exp',
+          data: WORST_PF.map((y,i)=>({x: WORST_N_RANGE[i], y})),
+          borderColor:'#38d9c8',
+          backgroundColor:'rgba(56,217,200,.08)',
+          borderWidth:2,pointRadius:0,tension:0,fill:false
+        },
+        {
+          label:'log(n)',
+          data: WORST_LOG_N.map((y,i)=>({x: WORST_N_RANGE[i], y})),
+          borderColor:'#f5c842',
+          borderWidth:1.5,pointRadius:0,tension:0,fill:false,
+          borderDash:[4,3]
+        },
+        {
+          label:'2·log(n)',
+          data: WORST_2LOG_N.map((y,i)=>({x: WORST_N_RANGE[i], y})),
+          borderColor:'#a78bfa',
+          borderWidth:1.5,pointRadius:0,tension:0,fill:false,
+          borderDash:[4,3]
+        }
       ]
-    },options:baseOpts()});
+    },
+    options:{
+      parsing: false,
+      maintainAspectRatio:false,
+      ...baseOpts()
+    }
+  });
   })();
 }
 /* ── RESULTS DATA — indexed by [eps_idx] for each dataset ── */
